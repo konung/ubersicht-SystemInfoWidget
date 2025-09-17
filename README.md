@@ -2,7 +2,15 @@
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
-![SystemInfoWidget Preview](preview.png)
+![SystemInfoWidget Preview](screenshot.png)
+
+## Widget Gallery Submission
+
+This widget follows the [Übersicht widget format](https://github.com/felixhageloh/uebersicht-widgets) and includes:
+- ✅ `widget.json` - Widget manifest with metadata
+- ✅ `SystemInfoWidget.widget.zip` - Packaged widget ready for installation
+- ✅ `screenshot.png` - Gallery preview (516x320px for retina displays)
+- ✅ Unzipped source code for viewing and contributions
 
 ## Features
 
@@ -50,15 +58,71 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 
 ## Installation
 
-1. Install [Übersicht](http://tracesof.net/uebersicht/)
+Installing this widget is super easy! Just follow the steps below:
 
-2. Clone this widget to your widgets folder:
+### Step 1: Install Übersicht
+First, you need the Übersicht app itself:
+```bash
+brew install --cask ubersicht
+```
+Or download from [http://tracesof.net/uebersicht/](http://tracesof.net/uebersicht/)
+
+### Step 2: Install Required Dependencies
+Install all required tools with one command:
+```bash
+# Install required tools (jq) and recommended font
+brew install jq && \
+brew tap homebrew/cask-fonts && \
+brew install --cask font-iosevka-term-nerd-font
+```
+
+### Step 3: Install the Widget
+
+#### Option A: Via Git (Recommended)
 ```bash
 cd ~/Library/Application\ Support/Übersicht/widgets/
 git clone https://github.com/konung/ubersicht-SystemInfoWidget.git SystemInfoWidget.widget
 ```
 
-3. Refresh Übersicht to see the widget
+#### Option B: Manual Download
+1. Download the latest release from [GitHub](https://github.com/konung/ubersicht-SystemInfoWidget/releases)
+2. Move the downloaded folder to `~/Library/Application Support/Übersicht/widgets/`
+3. Rename the folder to `SystemInfoWidget.widget` if needed
+
+### Step 4: Configure the Font in Übersicht
+1. Open Übersicht preferences (click the Übersicht icon in menu bar → Preferences)
+2. Under "General" tab, set the font to **IosevkaTerm Nerd Font Mono**
+3. Adjust font size if needed (recommended: 13-15px)
+
+### Step 5: Refresh and Position
+1. Refresh Übersicht (menu bar → Refresh All Widgets)
+2. The widget should appear in the top-left corner
+3. To adjust position, edit `index.coffee`:
+   ```coffee
+   position:
+     top: 20    # Distance from top
+     left: 20   # Distance from left
+   ```
+
+### Quick Install Script
+For the lazy developers, here's a one-liner that does everything:
+```bash
+brew install --cask ubersicht && \
+brew install jq && \
+brew tap homebrew/cask-fonts && \
+brew install --cask font-iosevka-term-nerd-font && \
+cd ~/Library/Application\ Support/Übersicht/widgets/ && \
+git clone https://github.com/konung/ubersicht-SystemInfoWidget.git SystemInfoWidget.widget && \
+open -a Übersicht
+```
+
+### Verify Installation
+After installation, you should see:
+- System information with icons (not boxes or `?` characters)
+- Real-time updates every 5 seconds
+- Network traffic monitoring with app names
+
+If icons appear as boxes, double-check that IosevkaTerm Nerd Font is selected in Übersicht preferences.
 
 ## Configuration
 
@@ -107,10 +171,39 @@ appearance:
 
 ## Requirements
 
+### System Requirements
 - macOS 10.14 or later
-- [Übersicht](http://tracesof.net/uebersicht/)
-- `jq` for JSON processing (install via `brew install jq`)
-- Nerd Fonts for icons (recommended: IosevkaTerm Nerd Font)
+- [Übersicht](http://tracesof.net/uebersicht/) (widget platform)
+
+### Required Tools
+These must be installed for the widget to function:
+
+| Tool | Purpose | Installation |
+|------|---------|-------------|
+| `jq` | JSON processing | `brew install jq` |
+| `curl` | IP geolocation | Pre-installed on macOS |
+| `bc` | Math calculations | Pre-installed on macOS |
+
+### Optional but Recommended
+- **Nerd Fonts** - For proper icon display (recommended: [IosevkaTerm Nerd Font](https://www.nerdfonts.com/))
+  - Without Nerd Fonts, icons will appear as boxes or missing characters
+  - Install via Homebrew: `brew tap homebrew/cask-fonts && brew install --cask font-iosevka-term-nerd-font`
+
+### Built-in macOS Tools Used
+The widget uses these pre-installed macOS tools:
+- **System**: `sw_vers`, `sysctl`, `scutil`, `system_profiler`, `uptime`, `defaults`
+- **Network**: `ifconfig`, `networksetup`, `netstat`, `nettop`, `ping`, `route`, `nslookup`
+- **Storage**: `diskutil` (for APFS-accurate readings), `df` (fallback)
+- **Power**: `pmset` (battery status)
+- **Text Processing**: `awk`, `sed`, `grep`, `cut`, `sort`, etc.
+
+### Optional Tool Detection
+The widget automatically detects and uses if present:
+- **Package Managers**: `brew`, `npm`, `pip`/`pip3`
+- **Version Managers**: `asdf`, `rbenv`, `nvm`, `pyenv`
+- **Languages**: `ruby`, `node`, `python`, `crystal`, `elixir`, `rust`, `go`, `java`
+- **Enhanced Tools**:
+  - `gping` - Better ping statistics (`brew install gping`)
 
 ## Features in Detail
 
@@ -166,8 +259,14 @@ icons:
 - Set the font in Übersicht preferences
 
 ### Network apps not showing
-- The widget uses `nettop` which requires accessibility permissions
-- Some apps may need to be running to appear
+- The widget uses `nettop` for per-app bandwidth monitoring
+- `nettop` doesn't require special permissions for basic functionality
+- Only actively transferring apps will appear in the list
+- System processes can be filtered via `skipNetworkApps` configuration
+
+### Permission Issues
+- If you see permission errors, the widget will still function but some features may be limited
+- Network traffic totals will always work as they use `netstat` which doesn't require special permissions
 
 ## License
 
@@ -176,6 +275,17 @@ MIT License - feel free to modify and distribute
 ## Contributing
 
 Pull requests are welcome! Please feel free to submit issues or improvements.
+
+### Screenshot Requirements
+For Übersicht widget gallery submission, screenshots must be:
+- **Standard**: 258x160px
+- **Retina (Recommended)**: 516x320px (2x resolution)
+
+To capture a perfect screenshot:
+1. Position the widget nicely on your desktop
+2. Use macOS screenshot tool: `Cmd + Shift + 4`
+3. Resize to exactly 516x320px for retina displays
+4. Save as `screenshot.png` (not `preview.png`)
 
 ## Credits
 

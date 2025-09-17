@@ -4,22 +4,70 @@
 # Prioritize /usr/local/bin for Intel brew (which appears to be the user's primary)
 export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-# Requirements:
-# Required tools (script will exit if not installed):
-# - jq (JSON processor) - Install via: brew install jq
-# - curl (for external IP lookup) - Usually pre-installed on macOS
+# ========================================
+# TOOL REQUIREMENTS AND DEPENDENCIES
+# ========================================
 #
-# Recommended performance tools (optional but improve speed/accuracy):
-# - ripgrep (rg) - Fast text search - Install via: brew install ripgrep
-# - fd - Fast file finder - Install via: brew install fd
-# - gping - Graphical ping with statistics - Install via: brew install gping
-# - bandwhich - Network utilization tool - Install via: brew install bandwhich
-# - btop - Resource monitor - Install via: brew install btop
-# - duf - Better disk usage - Install via: brew install duf
-# - procs - Better process viewer - Install via: brew install procs
+# REQUIRED TOOLS (script will exit if not installed):
+# - jq: JSON processor for formatting output
+#   Install: brew install jq
+# - curl: HTTP client for IP geolocation
+#   Install: Usually pre-installed on macOS
+# - bc: Calculator for floating point math
+#   Install: Usually pre-installed on macOS
 #
-# Standard macOS tools used:
-# - sw_vers, sysctl, ifconfig, networksetup, pmset, scutil, system_profiler
+# STANDARD macOS TOOLS USED (pre-installed):
+# System Information:
+# - sw_vers: macOS version info
+# - sysctl: Kernel parameters (CPU, memory)
+# - scutil: System configuration (hostname)
+# - system_profiler: Hardware details (GPU, display)
+# - uptime: System uptime
+# - defaults: User preferences
+# - uname: Kernel info
+# - hostname: System hostname
+# - whoami: Current username
+#
+# Network Tools:
+# - ifconfig: Network interface info
+# - networksetup: WiFi and network config
+# - netstat: Network statistics and traffic
+# - nettop: Per-app network usage (requires root for some features)
+# - ping: Network latency
+# - nslookup: DNS lookups
+# - route: Routing table
+#
+# Storage Tools:
+# - diskutil: APFS disk usage (accurate)
+# - df: Filesystem usage (fallback)
+#
+# Power Management:
+# - pmset: Battery and power info
+#
+# Process Tools:
+# - pgrep: Process detection
+# - ps: Process listing
+#
+# Text Processing (pre-installed):
+# - awk, sed, grep, cut, sort, uniq, head, tail, tr, wc
+#
+# OPTIONAL TOOLS (enhance functionality if present):
+# Package Managers:
+# - brew: Homebrew package manager (Intel: /usr/local/bin, ARM: /opt/homebrew/bin)
+# - npm: Node package manager
+# - pip/pip3: Python package manager
+#
+# Version Managers (detected if present):
+# - asdf: Universal version manager
+# - rbenv: Ruby version manager
+# - nvm: Node version manager
+# - pyenv: Python version manager
+#
+# Programming Languages (detected if present):
+# - ruby, node, python/python3, crystal, elixir, rust, go, java
+#
+# Enhanced Tools (install for better performance):
+# - gping: Better ping with statistics (brew install gping)
 
 # Check for required dependencies
 if ! command -v jq &> /dev/null; then
@@ -29,6 +77,11 @@ fi
 
 if ! command -v curl &> /dev/null; then
     echo '{"error": "curl is required but not installed. Install via: brew install curl"}'
+    exit 1
+fi
+
+if ! command -v bc &> /dev/null; then
+    echo '{"error": "bc is required but not installed. Install via: brew install bc"}'
     exit 1
 fi
 
