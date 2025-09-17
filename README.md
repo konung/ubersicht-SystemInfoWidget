@@ -242,13 +242,13 @@ icons:
 ## Troubleshooting
 
 ### Widget not displaying
-- Check that Übersicht is running
+- Check that Übersicht is running (Restart if needed)
 - Verify the widget is in the correct directory
-- Check Console.app for error messages
+- Check Console for error/debug messages
 
 ### Missing icons
 - Install a Nerd Font (recommended: IosevkaTerm Nerd Font)
-- Set the font in Übersicht preferences
+- Set the font in Übersicht preferences - Most Nerd fonts should work
 
 ### Network apps not showing
 - The widget uses `nettop` for per-app bandwidth monitoring
