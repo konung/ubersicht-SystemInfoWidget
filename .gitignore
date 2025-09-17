@@ -1,0 +1,26 @@
+# Cache files
+.cache
+*.cache
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+
+# Private/sensitive files
+*.private
+*.secret
