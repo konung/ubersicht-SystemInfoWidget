@@ -2,15 +2,7 @@
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
-![SystemInfoWidget Preview](screenshot.png)
-
-## Widget Gallery Submission
-
-This widget follows the [Übersicht widget format](https://github.com/felixhageloh/uebersicht-widgets) and includes:
-- ✅ `widget.json` - Widget manifest with metadata
-- ✅ `SystemInfoWidget.widget.zip` - Packaged widget ready for installation
-- ✅ `screenshot.png` - Gallery preview (516x320px for retina displays)
-- ✅ Unzipped source code for viewing and contributions
+![SystemInfoWidget Preview](preview.png)
 
 ## Features
 
@@ -276,16 +268,6 @@ MIT License - feel free to modify and distribute
 
 Pull requests are welcome! Please feel free to submit issues or improvements.
 
-### Screenshot Requirements
-For Übersicht widget gallery submission, screenshots must be:
-- **Standard**: 258x160px
-- **Retina (Recommended)**: 516x320px (2x resolution)
-
-To capture a perfect screenshot:
-1. Position the widget nicely on your desktop
-2. Use macOS screenshot tool: `Cmd + Shift + 4`
-3. Resize to exactly 516x320px for retina displays
-4. Save as `screenshot.png` (not `preview.png`)
 
 ## Credits
 
