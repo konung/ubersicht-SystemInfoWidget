@@ -201,8 +201,38 @@ The widget automatically detects and uses if present:
 
 ### Smart Caching
 - Brew outdated packages cached for 1 hour
-- IP location cached for 5 minutes
+- IP location cached intelligently (see Rate Limiting below)
 - Network traffic tracked continuously
+
+### Rate Limiting & IP Monitoring
+
+The widget implements intelligent caching to avoid hitting API rate limits:
+
+#### How It Works
+1. **Initial Check**: When the widget starts, it fetches full IP info (location, ISP, hostname)
+2. **Smart Refresh**:
+   - Every **5 minutes**: Quick IP-only check to detect changes
+   - If IP changed: Full info refresh triggered immediately
+   - If IP unchanged: Cached data continues to be used
+3. **Full Refresh**: Every **1 hour** regardless of IP changes
+
+#### API Services Used
+- Primary: `ipinfo.io` (limited to ~1000 requests/day without token)
+- Fallback services if rate limited:
+  - `api.ipify.org` (IP only)
+  - `checkip.amazonaws.com` (IP only)
+  - `icanhazip.com` (IP only)
+
+#### Cache Location
+- Stored in `.cache` file in widget directory
+- Format: Simple key=value pairs
+- Automatically cleaned up on each update
+
+#### If You Hit Rate Limits
+- The widget will still show your local network info
+- Public IP will fall back to IP-only services (no location data)
+- Wait 1 hour for automatic cache expiry
+- Or manually delete `.cache` file to force refresh
 
 ### Dual Homebrew Support
 Automatically detects and monitors both:
@@ -210,9 +240,35 @@ Automatically detects and monitors both:
 - ARM Homebrew at `/opt/homebrew/bin/brew`
 
 ### Real-time Network Traffic
-- Shows current upload/download rates
-- Per-app bandwidth monitoring
-- Configurable app filtering
+
+#### Overall Traffic Monitoring
+- Uses `netstat` to track total network bytes
+- Calculates rates by comparing samples over time
+- Updates every 5 seconds (configurable via `refreshFrequency`)
+- Shows human-readable rates (KB/s, MB/s, etc.)
+
+#### Per-App Bandwidth Monitoring
+- Uses `nettop` to capture app-level network usage
+- Takes two samples 1 second apart to calculate rates
+- Shows top N apps by current bandwidth usage (default: 3)
+- Filters out system processes by default
+
+#### Configurable Filtering
+```coffee
+skipNetworkApps: [
+  'kernel_task'      # System kernel
+  'IPNExtension'     # Some VPN extensions
+  'mDNSResponder'    # Bonjour/DNS
+  'trustd'           # Certificate validation
+  'nsurlsessiond'    # Background downloads
+]
+```
+
+#### How Network Monitoring Works
+1. **Total Traffic**: Tracked via `netstat -b` interface statistics
+2. **App Traffic**: Sampled via `nettop -P` process monitoring
+3. **Rate Calculation**: (Current Bytes - Previous Bytes) / Time Elapsed
+4. **Display**: Only shows apps actively transferring data
 
 ## Customization
 
