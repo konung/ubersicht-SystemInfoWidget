@@ -179,4 +179,4 @@ Pull requests are welcome! Please feel free to submit issues or improvements.
 
 ## Credits
 
-Inspired by various Übersicht widgets including NetFullSysInfo and neofetch.
+Inspired by Übersicht widgets NetFullSysInfo and neofetch.
