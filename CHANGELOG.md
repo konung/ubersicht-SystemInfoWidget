@@ -25,21 +25,37 @@ All notable changes to SystemInfoWidget will be documented in this file.
 - Duplicate CPU process display issue
 - JSON parsing errors with control characters
 
-## [1.1] - Previous Version
+## [1.1] - 2025-01-17 (Earlier today)
 
 ### Added
-- Dual Homebrew support (Intel and ARM)
-- APFS-accurate disk usage reporting
-- Network traffic rate monitoring
-- Smart caching for expensive operations
-- Programming language version detection
+- Real-time network traffic monitoring with up/down speeds
+- Per-app network usage tracking via nettop
+- Smart caching system for expensive operations
+- Public IP location tracking with intelligent rate limiting
+- Network app filtering configuration
+- Current date and time display
 
-## [1.0] - Initial Release
+### Changed
+- Improved network interface detection
+- Enhanced cache file format with timestamps
+- Better handling of multiple network interfaces
+
+### Fixed
+- Network traffic calculation accuracy
+- Cache file duplicate entry handling
+
+## [1.0] - 2025-01-17 (Initial Release)
 
 ### Features
-- System information display
-- Network interface monitoring
-- Storage information
-- Package management tracking
-- Developer tools integration
+- System information display (OS, kernel, uptime)
+- Hardware monitoring (CPU, memory, GPU)
+- Network interface monitoring with IP addresses
+- APFS-accurate disk usage reporting
+- Dual Homebrew support (Intel x86 and ARM)
+- Package management tracking (brew, npm, pip)
+- Programming language version detection (via asdf/rbenv/nvm)
 - Battery status monitoring
+- Developer tools integration
+- Nerd Font icon support
+- Configurable display sections
+- Multi-column responsive layout

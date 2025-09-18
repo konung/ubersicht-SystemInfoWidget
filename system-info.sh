@@ -325,8 +325,9 @@ get_public_ip_info() {
 
     # Check if we have cached IP info
     if [ -f "$cache_file" ]; then
-        ip_cache_time=$(grep "^IP_CACHE_TIMESTAMP=" "$cache_file" 2>/dev/null | cut -d'=' -f2)
-        ip_check_time=$(grep "^IP_CHECK_TIMESTAMP=" "$cache_file" 2>/dev/null | cut -d'=' -f2)
+        # Use head -1 to avoid duplicates
+        ip_cache_time=$(grep "^IP_CACHE_TIMESTAMP=" "$cache_file" 2>/dev/null | head -1 | cut -d'=' -f2)
+        ip_check_time=$(grep "^IP_CHECK_TIMESTAMP=" "$cache_file" 2>/dev/null | head -1 | cut -d'=' -f2)
 
         if [ ! -z "$ip_cache_time" ]; then
             # Check if we need full info update (1 hour)
