@@ -1,8 +1,12 @@
 # SystemInfoWidget - Combined system information display
-# Merges the best of NetFullSysInfo and ubersicht-neofetch
+# Version: 1.2
+# Author: Nick Gorbikoff
+# Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 
 # Configuration - Customize appearance and behavior
 config =
+  # Widget version
+  version: '1.2'
   # Update frequency in milliseconds
   refreshFrequency: 5000
   # Widget position on screen (EDIT THESE VALUES)
@@ -13,12 +17,12 @@ config =
     bottom: 'auto'
   # Visual settings
   appearance:
-    backgroundOpacity: 0.85
+    backgroundOpacity: 0.8
     backgroundBlur: 10
     borderRadius: 13
     padding: 20
     fontSize: 15
-    iconFontSize: 18  # Font size for Nerd Font icons
+    iconFontSize: 20  # Font size for Nerd Font icons
     # fontFamily: 'IosevkaTerm Nerd Font Mono,monospace'
     fontFamily: 'IosevkaTerm Nerd Font Mono,monospace'
     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
@@ -46,13 +50,13 @@ config =
     labelMinWidth: 150     # Default label min width (deprecated, use defaultLabelWidth)
     labelMarginRight: 10   # Space after labels
     labelOpacity: 0.7      # Opacity for labels
-    sectionHeaderMargin: 8 # Margin below section headers
+    sectionHeaderMargin: 0  # Margin below section headers
     separatorMargin: 10    # Margin around separators
-    separatorOpacity: 0.3  # Opacity for separator lines
+    separatorOpacity: 0.9  # Opacity for separator lines
     separatorMinLength: 50 # Minimum length for separator calculation
-    infoSectionGap: 12     # Gap inside info sections
-    infoGroupLineGap: 4    # Gap between lines in info groups
-    infoLineHeight: 1.4    # Line height for info lines
+    infoSectionGap: 8     # Gap inside info sections
+    infoGroupLineGap: 1    # Gap between lines in info groups
+    infoLineHeight: 1.1    # Line height for info lines
   # Thresholds for color changes
   thresholds:
     cpuWarning: 60
@@ -121,7 +125,8 @@ config =
     javascript: ''   # 📜 JavaScript (Nerd Font)
     c: ''            # 🔤 C (Nerd Font)
     cpp: ''          # ➕ C++ (Nerd Font)
-    csharp: ''       #     dart: ''         # 🎯 Dart (Nerd Font)
+    csharp: ''       # 💻 CSharp (Nerd Font)
+    dart: ''         # 🎯 Dart (Nerd Font)
     lua: ''          # 🌙 Lua (Nerd Font)
     perl: ''         # 🐪 Perl (Nerd Font)
     haskell: ''      # λ Haskell (Nerd Font)
@@ -130,24 +135,25 @@ config =
     cpu: ''          # 🧠 CPU (Nerd Font)
     gpu: 'ﮫ'          # 🎮 GPU (Nerd Font)
     memory: ''       # 🧩 Memory (Nerd Font)
-    disk: ''         # 💾 Disk (Nerd Font)
-    ethernet: ''     # 🔌 Ethernet (Nerd Font)
+    disk: '󰋊'         # 💾 Disk (Nerd Font)
+    diskUsage: '󱁌'    # 💾 Disk (Nerd Font)
+    ethernet: '󰈀'     # 🔌 Ethernet (Nerd Font)
     wifi: ''         # 📶 Wi-Fi (Nerd Font)
-    wifiOff: '睊'     # 📵 Wi-Fi off (Nerd Font)
+    wifiOff: '󱚼'      # 📵 Wi-Fi off (Nerd Font)
     localIp: ''      # 🏠 Local IP (Nerd Font - home)
     docker: ''       # 🐳 Docker (Nerd Font)
     bridge: ''       # 🌉 Bridge network (Nerd Font)
     vm: ''           # 📦 Virtual Machine (Nerd Font)
     parallels: ''    # 🔷 Parallels (Nerd Font)
     virtualbox: ''   # 📦 VirtualBox (Nerd Font)
-    tailscale: ''    # 🔐 Tailscale (Nerd Font)
+    tailscale: '󰖂'    # 🔐 Tailscale (Nerd Font)
     vpn: ''          # 🔒 VPN (Nerd Font)
     hotspot: ''      # 📡 Hotspot (Nerd Font)
     airdrop: ''      # 📤 AirDrop (Nerd Font - share)
     publicIp: ''     # 🌐 Public IP (Nerd Font)
-    location: ''     # 📍 Location (Nerd Font)
+    location: ''     # 📍 Location (Nerd Font)
     isp: ''          # 🏢 ISP/Organization (Nerd Font)
-    ping: ''         # 📡 Ping (Nerd Font)
+    ping: '󱦂'         # 📡 Ping (Nerd Font)
     traffic: ''      # 📊 Network traffic (Nerd Font)
     battery: ''      # 🔋 Battery (Nerd Font)
     batteryCharging: '' # ⚡ Battery charging (Nerd Font)
@@ -155,9 +161,10 @@ config =
     resolution: ''   # 🖥️ Display resolution (Nerd Font - desktop)
     desktop: ''      # 🖼️ Desktop Environment (Nerd Font - window maximize)
     wm: ''           # 🪟 Window Manager (Nerd Font - window restore)
-    theme: ''        # 🎨 Theme (Nerd Font - palette)
+    theme: '󰔎'        # 🎨 Theme (Nerd Font - palette)
     user: ''         # 👤 User (Nerd Font - user circle)
     default: ''      # 🔌 Default/Unknown (Nerd Font - network wired)
+    backup: '󰁯'       # 🕑 Backup (Nerd Font - time  )
   # Progress bar characters
   progressBar:
     filled: '■'       # Filled portion of progress bar (solid square)
@@ -219,11 +226,12 @@ render: ->
         #{logoColumn}
         <div class="column column-2">
           <div class="system-info" id="systemInfo"></div>
+          <div class="storage-info" id="storageInfo"></div>
           <div class="summary-info" id="summaryInfo"></div>
         </div>
         <div class="column column-3">
-          <div class="storage-info" id="storageInfo"></div>
           <div class="network-info" id="networkInfo"></div>
+          <div class="cpu-info" id="cpuInfo"></div>
         </div>
         <div class="column column-4">
           <div class="dev-info" id="devInfo"></div>
@@ -297,14 +305,11 @@ update: (output, domEl) ->
     username = if cfg.display.privacyMode then "user" else sys.username
     full_hostname = if cfg.display.privacyMode then "hostname" else sys.full_hostname
 
-    uptimeStr = "#{sys.uptime_days} days, #{sys.uptime_hours} hours, #{sys.uptime_minutes} mins"
+    uptimeStr = "#{sys.uptime_days}d #{sys.uptime_hours}h #{sys.uptime_minutes}m"
+    currentDateTime = sys.current_datetime or ""
 
     # Create separator line based on hostname length
     separatorLength = Math.max(cfg.layout.separatorMinLength, "#{username}@#{full_hostname}".length)
-
-    # Parse CPU usage
-    cpuUsage = parseFloat(hw.cpu_usage)
-    cpuColor = if cpuUsage > cfg.thresholds.cpuDanger then 'danger' else if cpuUsage > cfg.thresholds.cpuWarning then 'warning' else 'success'
 
     # Memory in GB
     memUsedGB = parseFloat(hw.memory_used)
@@ -318,7 +323,7 @@ update: (output, domEl) ->
       #{infoLine(cfg.icons.os, "OS", sys.os)}
       #{infoLine(cfg.icons.host, "Host", sys.host)}
       #{infoLine(cfg.icons.kernel, "Kernel", sys.kernel)}
-      #{infoLine(cfg.icons.uptime, "Uptime", uptimeStr)}
+      #{infoLine(cfg.icons.uptime, "Uptime", "#{uptimeStr} | #{currentDateTime}")}
       #{(() ->
         # Show both Intel (x86) and ARM brew stats
         intelCount = parseInt(sys.packages_brew_intel || 0)
@@ -361,7 +366,6 @@ update: (output, domEl) ->
       #{infoLine(cfg.icons.resolution, "Resolution", hw.resolution)}
       #{infoLine(cfg.icons.theme, "Appearance", sys.wm_theme.replace('Blue ', ''))}
       #{infoLine(cfg.icons.terminal, "Terminal", sys.terminal)}
-      #{infoLine(cfg.icons.cpu, "CPU", "#{hw.cpu} [#{hw.cpu_threads}] (#{colorize(hw.cpu_usage + '%', cpuColor)})")}
       #{infoLine(cfg.icons.gpu, "GPU", hw.gpu)}
       #{infoLine(cfg.icons.memory, "Memory", "#{memUsedGB.toFixed(1)} GB / #{memTotalGB.toFixed(0)} GB")}
     """
@@ -392,6 +396,30 @@ update: (output, domEl) ->
 
       systemContent += infoLine(batteryIcon, "Battery", "#{createBar(batteryPercentage, batteryColor)} #{battery.percentage}%#{chargingStatus}")
 
+      # Add battery health on separate line if available
+      if battery.cycles and battery.cycles != "N/A"
+        cycleColor = if parseInt(battery.cycles) > 1000 then 'danger' else if parseInt(battery.cycles) > 500 then 'warning' else 'text'
+        conditionColor = if battery.condition == "Normal" then 'success' else 'warning'
+        capacityColor = if parseInt(battery.max_capacity) < 80 then 'danger' else if parseInt(battery.max_capacity) < 90 then 'warning' else 'text'
+
+        healthDetails = "#{colorize(battery.cycles + ' cycles', cycleColor)}, #{colorize(battery.condition, conditionColor)}, #{colorize(battery.max_capacity + '% capacity', capacityColor)}"
+        systemContent += infoLine(batteryIcon, "Health", healthDetails)
+
+    # Add Time Machine status if available
+    if data.backup and data.backup.time_machine_running
+      if data.backup.time_machine_running == "Yes"
+        destination = if data.backup.destination and data.backup.destination != "N/A" then " to #{data.backup.destination}" else ""
+        tmStatus = "Backing up (#{data.backup.time_machine_percent}%)#{destination}"
+        tmColor = 'warning'
+      else if data.backup.last_backup and data.backup.last_backup != "N/A"
+        # Date is already formatted from script (e.g., "Sep 08 06:52")
+        tmStatus = "Last: #{data.backup.last_backup}"
+        tmColor = 'text'
+      else
+        tmStatus = "No recent backups"
+        tmColor = 'danger'
+      systemContent += infoLine(cfg.icons.backup, "Backup", colorize(tmStatus, tmColor))
+
     systemHtml = infoGroup(systemContent)
     $('#systemInfo').html(systemHtml)
 
@@ -415,7 +443,7 @@ update: (output, domEl) ->
     storageContent = """
       #{sectionHeader("Storage")}
       #{infoLine(cfg.icons.disk, "Disk", "#{storage.disk_used} / #{storage.disk_total} (#{storage.disk_available} free)")}
-      #{infoLine(cfg.icons.disk, "Usage", "#{createBar(diskPercentage, diskColor)} #{actualPercentage}% used")}
+      #{infoLine(cfg.icons.diskUsage, "Usage", "#{createBar(diskPercentage, diskColor)} #{actualPercentage}% used")}
     """
     storageHtml = infoGroup(storageContent)
     $('#storageInfo').html(storageHtml)
@@ -497,6 +525,32 @@ update: (output, domEl) ->
 
     $('#networkInfo').html(networkHtml)
 
+  # CPU Information
+  if cfg.display.showNetwork
+    hw = data.hardware
+    cpuUsage = parseFloat(hw.cpu_usage)
+    cpuColor = if cpuUsage > cfg.thresholds.cpuDanger then 'danger' else if cpuUsage > cfg.thresholds.cpuWarning then 'warning' else 'success'
+
+    cpuContent = sectionHeader("CPU Info")
+
+    # Add CPU hardware info at the top
+    cpuContent += infoLine(cfg.icons.cpu, "CPU", "#{hw.cpu} [#{hw.cpu_threads}] (#{colorize(hw.cpu_usage + '%', cpuColor)})", cfg.layout.networkLabelWidth)
+
+    # Add top processes if available
+    if data.processes and data.processes.top_cpu and data.processes.top_cpu.length > 0
+      cpuContent += """<div style="margin-top: 5px;">"""
+      for proc, index in data.processes.top_cpu
+        cpuValue = parseFloat(proc.cpu.replace('%', ''))
+        procColor = if cpuValue > 50 then 'danger' else if cpuValue > 20 then 'warning' else 'text'
+        procLabel = "  #{index + 1}. #{proc.name}"
+        cpuContent += infoLine('', procLabel, colorize(proc.cpu, procColor), cfg.layout.networkLabelWidth)
+      cpuContent += """</div>"""
+
+    cpuHtml = infoGroup(cpuContent)
+    $('#cpuInfo').html(cpuHtml)
+  else
+    $('#cpuInfo').html('')
+
   # Dev/Software Information
   if cfg.display.showDev
     sys = data.system
@@ -547,8 +601,9 @@ update: (output, domEl) ->
     memUsedGB = parseFloat(hw.memory_used)
     memTotalGB = parseFloat(hw.memory_total)
 
-    # Uptime
+    # Uptime and current time
     uptimeStr = "#{sys.uptime_days}d #{sys.uptime_hours}h #{sys.uptime_minutes}m"
+    currentTime = sys.current_time or ""
 
     # Disk format to match Ti notation
     diskUsed = storage.disk_used
