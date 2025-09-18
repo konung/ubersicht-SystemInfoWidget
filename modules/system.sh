@@ -15,22 +15,38 @@ get_system_info() {
     local window_manager="Quartz Compositor"
     local wm_theme=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo 'Light')
 
-    # Uptime calculation
+    # Uptime calculation - more robust parsing
     local uptime_str=$(uptime)
-    local days=$(echo "$uptime_str" | awk -F'( |,|:)+' '{d=0; if ($7=="days") {d=$6}; print d}')
-    local hours minutes
+    local days=0 hours=0 minutes=0
 
+    # Extract days if present
     if [[ "$uptime_str" == *"days"* ]]; then
-        hours=$(echo "$uptime_str" | awk -F'( |,|:)+' '{print $8}' | sed 's/^0*//')
-        minutes=$(echo "$uptime_str" | awk -F'( |,|:)+' '{print $9}' | sed 's/^0*//')
+        days=$(echo "$uptime_str" | grep -o '[0-9]\+ days' | grep -o '[0-9]\+')
+        # Extract time part after days: "18:49" -> hours=18, minutes=49
+        local time_part=$(echo "$uptime_str" | sed 's/.*days, *//' | sed 's/,.*//')
+        if [[ "$time_part" == *":"* ]]; then
+            hours=$(echo "$time_part" | cut -d: -f1)
+            minutes=$(echo "$time_part" | cut -d: -f2)
+        fi
+    elif [[ "$uptime_str" == *"hrs"* ]]; then
+        # Format like "up 2 hrs, 30 mins"
+        hours=$(echo "$uptime_str" | grep -o '[0-9]\+ hrs' | grep -o '[0-9]\+')
+        minutes=$(echo "$uptime_str" | grep -o '[0-9]\+ mins' | grep -o '[0-9]\+')
     else
-        hours=$(echo "$uptime_str" | awk -F'( |,|:)+' '{print $6}' | sed 's/^0*//')
-        minutes=$(echo "$uptime_str" | awk -F'( |,|:)+' '{print $7}' | sed 's/^0*//')
+        # Format like "up 1:23" or "up 23 mins"
+        if [[ "$uptime_str" == *":"* ]]; then
+            local time_part=$(echo "$uptime_str" | grep -o 'up [0-9:]\+' | grep -o '[0-9:]\+')
+            hours=$(echo "$time_part" | cut -d: -f1)
+            minutes=$(echo "$time_part" | cut -d: -f2)
+        elif [[ "$uptime_str" == *"mins"* ]]; then
+            minutes=$(echo "$uptime_str" | grep -o '[0-9]\+ mins' | grep -o '[0-9]\+')
+        fi
     fi
 
-    # Ensure values are at least 0 if empty
-    [ -z "$hours" ] && hours=0
-    [ -z "$minutes" ] && minutes=0
+    # Ensure values are numeric and not empty
+    days=$(echo "$days" | grep -o '^[0-9]\+$' || echo "0")
+    hours=$(echo "$hours" | grep -o '^[0-9]\+$' || echo "0")
+    minutes=$(echo "$minutes" | grep -o '^[0-9]\+$' || echo "0")
 
     # Process and thread counts
     local processes=$(ps aux | wc -l | tr -d ' ')

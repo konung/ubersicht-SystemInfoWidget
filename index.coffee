@@ -1,12 +1,12 @@
 # SystemInfoWidget - Combined system information display
-# Version: 1.2
+# Version: 2.1.2
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 
 # Configuration - Customize appearance and behavior
 config =
   # Widget version
-  version: '1.2'
+  version: '2.1.2'
   # Update frequency in milliseconds
   refreshFrequency: 5000
   # Widget position on screen (EDIT THESE VALUES)
