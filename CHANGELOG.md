@@ -2,6 +2,36 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [2.0] - 2025-01-18
+
+### Added
+- Modular architecture with parallel execution for performance improvement (4.2s → 3s)
+- Dynamic asdf language detection - automatically detects all installed asdf plugins
+- JSON-based cache system to prevent duplicate keys
+- Battery charging status detection (Charging/Charged/Discharging)
+
+### Changed
+- Complete script modularization into separate modules for maintainability
+- Cache format switched from ENV to JSON to prevent duplicate keys
+- Removed terminal field from display (not meaningful in widget context)
+- Language versions now exclusively use asdf (removed rbenv/nvm support)
+- Version bumped to 2.0 for major architectural changess
+- Script execution time reduced from 4.2 seconds to 3 seconds
+
+### Fixed
+- Brew package counts showing 0 (cache refresh issue)
+- Battery not showing charging status
+- Missing disk info with APFS containers
+- JSON parsing errors with leading zeros in uptime
+- Control characters in asdf version output
+- jq combination errors in modular script
+
+### Improved
+- Performance: 1.2s reduction in execution time through parallel processing
+- Code organization: Split 1200-line monolithic script into 7 focused modules
+- Flexibility: Languages shown are now configurable via config array
+- Reliability: Better error handling and cache management
+
 ## [1.2] - 2025-01-17
 
 ### Added

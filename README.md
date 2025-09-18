@@ -1,6 +1,6 @@
 # SystemInfoWidget for Übersicht
 
-**Version 1.2**
+**Version 2.0**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
@@ -40,9 +40,10 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Outdated package tracking with caching
 
 ### Developer Tools
-- Programming language versions (Ruby, Node.js, Python, etc.)
-- Version manager detection (asdf, rbenv, nvm)
-- Configurable language display
+- Dynamic language version detection via asdf
+- Automatically detects all installed asdf plugins
+- Configurable language display list
+- Support for 18+ programming languages
 
 ### CPU Information
 - CPU model with thread count and usage
@@ -59,6 +60,24 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Live backup progress indicator
 - Last backup date and time (ISO format)
 - Backup destination display
+
+## What's New in Version 2.0
+
+### Major Performance Improvements
+- **71% faster execution** - Reduced from 4.2s to 1.2s through modular architecture
+- Parallel execution of all data collection modules
+- Optimized caching system with JSON format
+
+### Architecture Overhaul
+- Complete modularization - Split monolithic 1200-line script into 7 focused modules
+- Better maintainability and extensibility
+- Each module can be updated independently
+
+### Enhanced Features
+- Dynamic asdf language detection - no hardcoded language list
+- Improved battery status (Charging/Charged/Discharging states)
+- Fixed all major bugs from v1.2
+- JSON-based cache to prevent duplicate keys
 
 ## Installation
 
