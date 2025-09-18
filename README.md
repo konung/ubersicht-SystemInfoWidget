@@ -1,5 +1,7 @@
 # SystemInfoWidget for Übersicht
 
+**Version 1.2**
+
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
 ![SystemInfoWidget Preview](preview.png)
@@ -14,8 +16,6 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Desktop environment info
 
 ### Hardware Monitoring
-- CPU model with thread count
-- Real-time CPU usage
 - Memory usage with percentage
 - GPU information
 - Display resolution
@@ -44,9 +44,21 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Version manager detection (asdf, rbenv, nvm)
 - Configurable language display
 
+### CPU Information
+- CPU model with thread count and usage
+- Real-time CPU usage percentage
+- Top CPU-consuming processes
+- Color-coded usage indicators
+
 ### Power Management
-- Battery percentage
-- Charging status indicator
+- Battery percentage and charging status
+- Battery health metrics (cycles, condition, max capacity)
+
+### Backup Monitoring
+- Time Machine backup status
+- Live backup progress indicator
+- Last backup date and time (ISO format)
+- Backup destination display
 
 ## Installation
 
@@ -116,6 +128,29 @@ After installation, you should see:
 
 If icons appear as boxes, double-check that IosevkaTerm Nerd Font is selected in Übersicht preferences.
 
+## Widget Layout
+
+The widget is organized into multiple sections across columns:
+
+### Column 1 - System & Storage
+- **System Info**: OS version, uptime, shell, terminal
+- **Storage**: Disk usage with visual progress bar
+- **Summary**: Total packages, processes, threads
+
+### Column 2 - Network & CPU
+- **Network Info**: Interfaces, IPs, traffic rates
+- **Network Apps**: Top apps by current bandwidth usage
+- **CPU Info**: CPU model, usage, top processes
+
+### Column 3 - Development
+- **Dev/Software**: Package managers, language versions
+- **Version Manager**: asdf/rbenv/nvm detection
+
+### Additional Features
+- **Battery Health**: Displayed in System Info when on battery
+- **Time Machine**: Shows backup progress when active
+- **Nerd Font Icons**: Used throughout for visual clarity
+
 ## Configuration
 
 Edit `index.coffee` to customize the widget:
@@ -132,13 +167,13 @@ position:
 display:
   showLogo: false         # ASCII art logo
   showSystemInfo: true    # System details
-  showHardware: true      # CPU/Memory
-  showNetwork: true       # Network info
+  showNetwork: true       # Network info & CPU info
   showStorage: true       # Disk usage
-  showBattery: true       # Battery status
-  showLanguages: true     # Dev languages
-  showNetworkApps: true   # App traffic monitoring
-  networkAppsCount: 3     # Number of apps to show
+  showBattery: true       # Battery status & health
+  showDev: true           # Developer tools & languages
+  showLanguages: true     # Programming language versions
+  showNetworkApps: true   # Per-app network traffic
+  networkAppsCount: 3     # Number of network apps (1-5)
 ```
 
 ### Network App Filtering
@@ -175,6 +210,8 @@ These must be installed for the widget to function:
 | `jq` | JSON processing | `brew install jq` |
 | `curl` | IP geolocation | Pre-installed on macOS |
 | `bc` | Math calculations | Pre-installed on macOS |
+| `nettop` | Per-app network monitoring | Pre-installed on macOS |
+| `tmutil` | Time Machine status | Pre-installed on macOS |
 
 ### Optional but Recommended
 - **Nerd Fonts** - For proper icon display (recommended: [IosevkaTerm Nerd Font](https://www.nerdfonts.com/))
