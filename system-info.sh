@@ -189,6 +189,11 @@ uptime_days=$((uptime_seconds / 86400))
 uptime_hours=$(( (uptime_seconds % 86400) / 3600 ))
 uptime_minutes=$(( (uptime_seconds % 3600) / 60 ))
 
+# Get current date and time
+current_date=$(date '+%Y-%m-%d')
+current_time_display=$(date '+%H:%M')  # 24-hour format without seconds
+current_datetime=$(date '+%Y-%m-%d %H:%M')  # Full datetime without seconds
+
 # Get CPU usage - simplified extraction
 cpu_usage=$(top -l 1 | awk '/^CPU/{print $3}' | tr -d '%')
 
@@ -670,8 +675,8 @@ format_rate() {
     fi
 }
 
-# Get top network apps (configurable count, default 3)
-network_apps_count="${NETWORK_APPS_COUNT:-3}"
+# Get top network apps (configurable count, default 5)
+network_apps_count="${NETWORK_APPS_COUNT:-5}"
 skip_apps="${SKIP_NETWORK_APPS:-}"
 first_app=true
 network_apps="["
@@ -700,6 +705,86 @@ if echo "$battery_info" | grep -q 'AC Power'; then
 elif echo "$battery_info" | grep -q 'charged'; then
     charging_status="Charged"
 fi
+
+# Get battery health metrics (MacBooks only)
+if system_profiler SPPowerDataType 2>/dev/null | grep -q "Cycle Count"; then
+    battery_cycles=$(system_profiler SPPowerDataType 2>/dev/null | grep "Cycle Count" | awk '{print $3}')
+    battery_condition=$(system_profiler SPPowerDataType 2>/dev/null | grep "Condition" | awk '{print $2}')
+    battery_max_capacity=$(system_profiler SPPowerDataType 2>/dev/null | grep "Maximum Capacity" | awk '{print $3}' | tr -d '%')
+else
+    battery_cycles="N/A"
+    battery_condition="N/A"
+    battery_max_capacity="N/A"
+fi
+
+# Get Time Machine backup status
+tm_running="No"
+tm_percent="0"
+tm_last_backup="N/A"
+tm_destination="N/A"
+if command -v tmutil &> /dev/null; then
+    tm_status=$(tmutil status 2>/dev/null || echo "")
+    if [ ! -z "$tm_status" ]; then
+        # Check if backup is running (look for "Running = 1")
+        if echo "$tm_status" | grep -q "Running = 1"; then
+            tm_running="Yes"
+            # Get percentage - it's in the Progress section
+            raw_percent=$(echo "$tm_status" | grep "Percent = " | head -1 | awk -F'"' '{print $2}')
+            if [ ! -z "$raw_percent" ]; then
+                tm_percent=$(echo "$raw_percent" | awk '{printf "%.1f", $1 * 100}')
+            fi
+            # Get destination - sanitize for JSON
+            raw_destination=$(echo "$tm_status" | grep "DestinationMountPoint = " | awk -F'"' '{print $2}')
+            if [ ! -z "$raw_destination" ]; then
+                tm_destination=$(basename "$raw_destination" 2>/dev/null | tr -d '\n\r\t' | sed 's/[[:cntrl:]]//g' || echo "Backup Drive")
+            fi
+        fi
+        # Get last successful backup
+        last_backup_path=$(tmutil latestbackup 2>/dev/null || echo "")
+        if [ ! -z "$last_backup_path" ]; then
+            # Extract date from backup path (format: YYYY-MM-DD-HHMMSS)
+            backup_name=$(basename "$last_backup_path" 2>/dev/null)
+            if [[ "$backup_name" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})-([0-9]{2})([0-9]{2})([0-9]{2}) ]]; then
+                year="${BASH_REMATCH[1]}"
+                month="${BASH_REMATCH[2]}"
+                day="${BASH_REMATCH[3]}"
+                hour="${BASH_REMATCH[4]}"
+                min="${BASH_REMATCH[5]}"
+                # Format as ISO/Military time "YYYY-MM-DD HH:MM"
+                tm_last_backup="${year}-${month}-${day} ${hour}:${min}"
+            else
+                tm_last_backup="N/A"
+            fi
+        fi
+    fi
+fi
+
+# Function to get top CPU processes (similar to network apps)
+get_top_processes() {
+    local proc_count="${1:-3}"  # Default to 3 processes
+    local first_proc=true
+
+    # Get top processes by CPU usage
+    ps aux | awk 'NR>1 {print $3 "|" $11}' | sort -t'|' -k1 -rn | head -n "$proc_count" | while IFS='|' read -r cpu cmd; do
+        # Clean up command name (basename only)
+        cmd_name=$(basename "$cmd" 2>/dev/null | cut -d' ' -f1)
+
+        if [ "$first_proc" = true ]; then
+            first_proc=false
+        else
+            echo -n ","
+        fi
+        echo -n "{\"name\":\"$cmd_name\",\"cpu\":\"$cpu%\"}"
+    done
+}
+
+# Get top CPU processes
+top_processes="["
+top_proc_data=$(get_top_processes 3)
+if [ ! -z "$top_proc_data" ]; then
+    top_processes+="$top_proc_data"
+fi
+top_processes+="]"
 
 # Get all resolutions
 resolutions=$(get_value "system_profiler SPDisplaysDataType | grep Resolution | awk '{print \$2 \"x\" \$4}' | paste -sd ', ' -" "Unknown")
@@ -978,6 +1063,9 @@ cat <<EOF
     "uptime_days": $uptime_days,
     "uptime_hours": $uptime_hours,
     "uptime_minutes": $uptime_minutes,
+    "current_date": "$current_date",
+    "current_time": "$current_time_display",
+    "current_datetime": "$current_datetime",
     "packages": "$packages_brew_total",
     "packages_brew": "$packages_brew",
     "packages_brew_intel": "$packages_brew_intel",
@@ -1033,7 +1121,19 @@ cat <<EOF
   },
   "battery": {
     "percentage": "$battery_percentage",
-    "charging": "$charging_status"
+    "charging": "$charging_status",
+    "cycles": "$battery_cycles",
+    "condition": "$battery_condition",
+    "max_capacity": "$battery_max_capacity"
+  },
+  "backup": {
+    "time_machine_running": "$tm_running",
+    "time_machine_percent": "$tm_percent",
+    "last_backup": "$tm_last_backup",
+    "destination": "$tm_destination"
+  },
+  "processes": {
+    "top_cpu": $top_processes
   }
 }
 EOF
