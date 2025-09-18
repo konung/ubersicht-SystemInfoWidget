@@ -27,21 +27,19 @@ get_package_info() {
         brew_outdated_intel=$(read_cache_value "brew_outdated_intel" "0")
         brew_outdated_arm=$(read_cache_value "brew_outdated_arm" "0")
     else
-        # Get counts directly (fast enough for formula/cask count)
-        if [ -x "/usr/local/bin/brew" ]; then
-            brew_intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-            brew_intel_cask=$(/usr/local/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-        fi
-        if [ -x "/opt/homebrew/bin/brew" ]; then
-            brew_arm_count=$(/opt/homebrew/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-            brew_arm_cask=$(/opt/homebrew/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-        fi
-
-        # Use cached outdated values
+        # ALWAYS use cached values - never block on brew commands
+        brew_intel_count=$(read_cache_value "brew_intel_count" "0")
+        brew_arm_count=$(read_cache_value "brew_arm_count" "0")
+        brew_intel_cask=$(read_cache_value "brew_intel_cask" "0")
+        brew_arm_cask=$(read_cache_value "brew_arm_cask" "0")
         brew_outdated_intel=$(read_cache_value "brew_outdated_intel" "0")
         brew_outdated_arm=$(read_cache_value "brew_outdated_arm" "0")
 
-        (
+        # Update cache in background ONLY if not already running
+        if ! pgrep -f "brew_cache_update" > /dev/null 2>&1; then
+            (
+            # Mark this as brew_cache_update process
+            exec -a brew_cache_update bash -c '
             # Intel brew
             if [ -x "/usr/local/bin/brew" ]; then
                 intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
@@ -71,9 +69,10 @@ get_package_info() {
                 \"brew_arm_cask\": $arm_cask,
                 \"brew_outdated_intel\": $intel_outdated,
                 \"brew_outdated_arm\": $arm_outdated,
-                \"brew_timestamp\": $current_time
+                \"brew_timestamp\": $(date +%s)
             }"
-        ) &
+            ' ) &
+        fi
     fi
 
     # NPM packages (fast)
@@ -97,6 +96,20 @@ EOF
 }
 
 get_language_versions() {
+    # Check cache first
+    local asdf_timestamp=$(read_cache_value "asdf_timestamp" "0")
+    local current_time=$(date +%s)
+    local cache_age=$((current_time - asdf_timestamp))
+
+    # Use cache if less than 1 hour old
+    if [ $cache_age -lt 3600 ] && [ "$asdf_timestamp" != "0" ]; then
+        local cached_languages=$(read_cache_value "asdf_languages" "{}")
+        if [ "$cached_languages" != "{}" ] && [ "$cached_languages" != "null" ]; then
+            echo "$cached_languages"
+            return
+        fi
+    fi
+
     # Source asdf if available
     if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
         . /opt/homebrew/opt/asdf/libexec/asdf.sh 2>/dev/null
@@ -110,34 +123,56 @@ get_language_versions() {
         return
     fi
 
-    # Get all installed languages from asdf
-    local json_output='{"version_manager": "asdf"'
+    # Return cached value while updating in background
+    local cached_languages=$(read_cache_value "asdf_languages" '{"version_manager": "asdf"}')
+    echo "$cached_languages"
 
-    # Get list of all plugins installed in asdf
-    local plugins=$(asdf plugin list 2>/dev/null)
-
-    if [ -z "$plugins" ]; then
-        echo '{"version_manager": "asdf (no plugins)"}'
-        return
-    fi
-
-    # Build JSON for each installed plugin
-    while IFS= read -r plugin; do
-        # Skip empty lines
-        [ -z "$plugin" ] && continue
-
-        # Get current version for this plugin
-        local version=$(asdf current "$plugin" 2>/dev/null | tail -1 | awk '{print $2}' | tr -d '\n\r')
-
-        # If no version set, check if any versions are installed
-        if [ -z "$version" ] || [ "$version" = "______" ]; then
-            version="N/A"
+    # Update cache in background if not already running
+    if ! pgrep -f "asdf_cache_update" > /dev/null 2>&1; then
+        (
+        # Source asdf
+        if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
+            . /opt/homebrew/opt/asdf/libexec/asdf.sh 2>/dev/null
+        elif [ -f "$HOME/.asdf/asdf.sh" ]; then
+            . $HOME/.asdf/asdf.sh 2>/dev/null
         fi
 
-        # Add to JSON output
-        json_output+=", \"$plugin\": \"$version\""
-    done <<< "$plugins"
+        # Get all installed languages from asdf
+        json_output='{"version_manager": "asdf"'
 
-    json_output+='}'
-    echo "$json_output"
+        # Get list of all plugins installed in asdf
+        plugins=$(asdf plugin list 2>/dev/null)
+
+        if [ ! -z "$plugins" ]; then
+            # Build JSON for each installed plugin
+            while IFS= read -r plugin; do
+                # Skip empty lines
+                [ -z "$plugin" ] && continue
+
+                # Get current version for this plugin
+                version=$(asdf current "$plugin" 2>/dev/null | tail -1 | awk '{print $2}' | tr -d '\n\r')
+
+                # If no version set, check if any versions are installed
+                if [ -z "$version" ] || [ "$version" = "______" ]; then
+                    version="N/A"
+                fi
+
+                # Add to JSON output
+                json_output+=", \"$plugin\": \"$version\""
+            done <<< "$plugins"
+        fi
+
+        json_output+='}'
+
+        # Write to cache using jq to update specific fields
+        if [ -f "$CACHE_FILE" ]; then
+            echo "$json_output" | jq -c . > /tmp/asdf_langs.json
+            current_timestamp=$(date +%s)
+            jq --slurpfile langs /tmp/asdf_langs.json \
+               ". + {asdf_languages: \$langs[0], asdf_timestamp: $current_timestamp}" \
+               "$CACHE_FILE" > "${CACHE_FILE}.tmp" && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
+            rm -f /tmp/asdf_langs.json
+        fi
+        ) &
+    fi
 }
