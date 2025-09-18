@@ -1,0 +1,16 @@
+{
+  "ip_cache_timestamp": 1758170962,
+  "ip_check_timestamp": 1758171263,
+  "public_ip": "172.59.186.114",
+  "public_city": "Chicago",
+  "public_region": "Illinois",
+  "public_country": "US",
+  "public_org": "AS21928 T-Mobile USA, Inc.",
+  "public_hostname": "",
+  "traffic_timestamp": 1758171508,
+  "traffic_bytes_in": 22073598380,
+  "traffic_bytes_out": 75011806714,
+  "brew_outdated_intel": 1,
+  "brew_outdated_arm": 8,
+  "brew_timestamp": 1758171084
+}

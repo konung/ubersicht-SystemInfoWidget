@@ -313,7 +313,40 @@ primary_ip=$(get_value "ifconfig '$primary_iface' | grep 'inet ' | awk '{print \
 
 # Get public IP and location info with caching to avoid rate limits
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cache_file="$script_dir/.cache"
+cache_file="$script_dir/.cache.json"
+
+# JSON cache helper functions
+read_cache_value() {
+    local key="$1"
+    local default="${2:-}"
+    if [ -f "$cache_file" ] && command -v jq &> /dev/null; then
+        value=$(jq -r ".$key // empty" "$cache_file" 2>/dev/null)
+        if [ ! -z "$value" ] && [ "$value" != "null" ]; then
+            echo "$value"
+        else
+            echo "$default"
+        fi
+    else
+        echo "$default"
+    fi
+}
+
+write_cache_values() {
+    local json_data="$1"
+    if command -v jq &> /dev/null; then
+        if [ -f "$cache_file" ]; then
+            # Merge with existing cache
+            merged=$(jq -s '.[0] * .[1]' "$cache_file" <(echo "$json_data") 2>/dev/null)
+            if [ ! -z "$merged" ]; then
+                echo "$merged" > "$cache_file"
+            else
+                echo "$json_data" > "$cache_file"
+            fi
+        else
+            echo "$json_data" > "$cache_file"
+        fi
+    fi
+}
 
 # Function to get and cache public IP info
 get_public_ip_info() {
@@ -323,38 +356,33 @@ get_public_ip_info() {
     local need_ip_check=false
     local need_full_update=false
 
-    # Check if we have cached IP info
-    if [ -f "$cache_file" ]; then
-        # Use head -1 to avoid duplicates
-        ip_cache_time=$(grep "^IP_CACHE_TIMESTAMP=" "$cache_file" 2>/dev/null | head -1 | cut -d'=' -f2)
-        ip_check_time=$(grep "^IP_CHECK_TIMESTAMP=" "$cache_file" 2>/dev/null | head -1 | cut -d'=' -f2)
+    # Check cached values
+    ip_cache_time=$(read_cache_value "ip_cache_timestamp" "0")
+    ip_check_time=$(read_cache_value "ip_check_timestamp" "0")
 
-        if [ ! -z "$ip_cache_time" ]; then
-            # Check if we need full info update (1 hour)
-            time_diff=$((current_time - ip_cache_time))
-            if [ $time_diff -gt $full_info_duration ]; then
-                need_full_update=true
-            else
-                # Check if we need IP check only (5 minutes)
-                if [ ! -z "$ip_check_time" ]; then
-                    check_diff=$((current_time - ip_check_time))
-                    if [ $check_diff -gt $ip_check_interval ]; then
-                        need_ip_check=true
-                    fi
-                else
+    if [ "$ip_cache_time" != "0" ]; then
+        # Check if we need full info update (1 hour)
+        time_diff=$((current_time - ip_cache_time))
+        if [ $time_diff -gt $full_info_duration ]; then
+            need_full_update=true
+        else
+            # Check if we need IP check only (5 minutes)
+            if [ "$ip_check_time" != "0" ]; then
+                check_diff=$((current_time - ip_check_time))
+                if [ $check_diff -gt $ip_check_interval ]; then
                     need_ip_check=true
                 fi
-
-                # Read cached values
-                public_ip=$(grep "^IP_PUBLIC_IP=" "$cache_file" | cut -d'=' -f2)
-                public_city=$(grep "^IP_PUBLIC_CITY=" "$cache_file" | cut -d'=' -f2)
-                public_region=$(grep "^IP_PUBLIC_REGION=" "$cache_file" | cut -d'=' -f2)
-                public_country=$(grep "^IP_PUBLIC_COUNTRY=" "$cache_file" | cut -d'=' -f2)
-                public_org=$(grep "^IP_PUBLIC_ORG=" "$cache_file" | cut -d'=' -f2)
-                public_hostname=$(grep "^IP_PUBLIC_HOSTNAME=" "$cache_file" | cut -d'=' -f2)
+            else
+                need_ip_check=true
             fi
-        else
-            need_full_update=true
+
+            # Read cached values
+            public_ip=$(read_cache_value "public_ip" "")
+            public_city=$(read_cache_value "public_city" "")
+            public_region=$(read_cache_value "public_region" "")
+            public_country=$(read_cache_value "public_country" "")
+            public_org=$(read_cache_value "public_org" "")
+            public_hostname=$(read_cache_value "public_hostname" "")
         fi
     else
         need_full_update=true
@@ -370,11 +398,7 @@ get_public_ip_info() {
             need_full_update=true
         else
             # Update check timestamp only
-            if [ -f "$cache_file" ]; then
-                grep -v "^IP_CHECK_TIMESTAMP=" "$cache_file" > "$cache_file.tmp" || true
-                mv "$cache_file.tmp" "$cache_file"
-            fi
-            echo "IP_CHECK_TIMESTAMP=$current_time" >> "$cache_file"
+            write_cache_values "{\"ip_check_timestamp\": $current_time}"
         fi
     fi
 
@@ -426,23 +450,21 @@ get_public_ip_info() {
 
         # Only update cache if we got valid data
         if [ "$public_ip" != "N/A" ] || [ ! -z "$public_country" ]; then
-            # Remove old IP entries and add new ones
-            if [ -f "$cache_file" ]; then
-                grep -v "^IP_PUBLIC_\|^IP_CACHE_TIMESTAMP\|^IP_CHECK_TIMESTAMP" "$cache_file" > "$cache_file.tmp" || true
-                mv "$cache_file.tmp" "$cache_file"
-            fi
-
-            # Append new IP data to cache
-            cat >> "$cache_file" <<EOF
-IP_CACHE_TIMESTAMP=$current_time
-IP_CHECK_TIMESTAMP=$current_time
-IP_PUBLIC_IP=$public_ip
-IP_PUBLIC_CITY=$public_city
-IP_PUBLIC_REGION=$public_region
-IP_PUBLIC_COUNTRY=$public_country
-IP_PUBLIC_ORG=$public_org
-IP_PUBLIC_HOSTNAME=$public_hostname
+            # Write new IP data to cache
+            cache_json=$(cat <<EOF
+{
+    "ip_cache_timestamp": $current_time,
+    "ip_check_timestamp": $current_time,
+    "public_ip": "$public_ip",
+    "public_city": "$public_city",
+    "public_region": "$public_region",
+    "public_country": "$public_country",
+    "public_org": "$public_org",
+    "public_hostname": "$public_hostname"
+}
 EOF
+            )
+            write_cache_values "$cache_json"
         fi
     fi
 }
@@ -487,36 +509,31 @@ get_network_traffic() {
 
         current_time=$(date +%s)
 
-        if [ -f "$cache_file" ]; then
-            # Read previous traffic values from main cache (use head -1 to avoid duplicates)
-            prev_time=$(grep "^TRAFFIC_CACHE_TIMESTAMP=" "$cache_file" | head -1 | cut -d'=' -f2)
-            prev_in=$(grep "^TRAFFIC_BYTES_IN=" "$cache_file" | head -1 | cut -d'=' -f2)
-            prev_out=$(grep "^TRAFFIC_BYTES_OUT=" "$cache_file" | head -1 | cut -d'=' -f2)
+        # Read previous traffic values from cache
+        prev_time=$(read_cache_value "traffic_timestamp" "0")
+        prev_in=$(read_cache_value "traffic_bytes_in" "0")
+        prev_out=$(read_cache_value "traffic_bytes_out" "0")
 
-            # Calculate time difference
-            if [ ! -z "$prev_time" ]; then
-                time_diff=$((current_time - prev_time))
+        # Calculate time difference
+        if [ "$prev_time" != "0" ]; then
+            time_diff=$((current_time - prev_time))
 
-                if [ $time_diff -gt 0 ] && [ $time_diff -lt 60 ]; then
-                    # Calculate bytes per second
-                    bytes_per_sec_in=$(( (bytes_in - prev_in) / time_diff ))
-                    bytes_per_sec_out=$(( (bytes_out - prev_out) / time_diff ))
+            if [ $time_diff -gt 0 ] && [ $time_diff -lt 60 ]; then
+                # Calculate bytes per second
+                bytes_per_sec_in=$(( (bytes_in - prev_in) / time_diff ))
+                bytes_per_sec_out=$(( (bytes_out - prev_out) / time_diff ))
 
-                    # Convert to human readable (KB/s or MB/s)
-                    if [ $bytes_per_sec_in -gt 1048576 ]; then
-                        traffic_down=$(echo "$bytes_per_sec_in" | awk '{printf "%.1f MB/s", $1/1048576}')
-                    else
-                        traffic_down=$(echo "$bytes_per_sec_in" | awk '{printf "%.1f KB/s", $1/1024}')
-                    fi
-
-                    if [ $bytes_per_sec_out -gt 1048576 ]; then
-                        traffic_up=$(echo "$bytes_per_sec_out" | awk '{printf "%.1f MB/s", $1/1048576}')
-                    else
-                        traffic_up=$(echo "$bytes_per_sec_out" | awk '{printf "%.1f KB/s", $1/1024}')
-                    fi
+                # Convert to human readable (KB/s or MB/s)
+                if [ $bytes_per_sec_in -gt 1048576 ]; then
+                    traffic_down=$(echo "$bytes_per_sec_in" | awk '{printf "%.1f MB/s", $1/1048576}')
                 else
-                    traffic_down="0.0 KB/s"
-                    traffic_up="0.0 KB/s"
+                    traffic_down=$(echo "$bytes_per_sec_in" | awk '{printf "%.1f KB/s", $1/1024}')
+                fi
+
+                if [ $bytes_per_sec_out -gt 1048576 ]; then
+                    traffic_up=$(echo "$bytes_per_sec_out" | awk '{printf "%.1f MB/s", $1/1048576}')
+                else
+                    traffic_up=$(echo "$bytes_per_sec_out" | awk '{printf "%.1f KB/s", $1/1024}')
                 fi
             else
                 traffic_down="0.0 KB/s"
@@ -527,19 +544,16 @@ get_network_traffic() {
             traffic_up="0.0 KB/s"
         fi
 
-        # Update traffic values in main cache file
-        # First, remove ALL old traffic entries to prevent duplicates
-        if [ -f "$cache_file" ]; then
-            grep -v "^TRAFFIC_CACHE_TIMESTAMP\|^TRAFFIC_BYTES_IN\|^TRAFFIC_BYTES_OUT" "$cache_file" > "$cache_file.tmp" || true
-            mv "$cache_file.tmp" "$cache_file"
-        fi
-
-        # Append new traffic data
-        cat >> "$cache_file" <<EOF
-TRAFFIC_CACHE_TIMESTAMP=$current_time
-TRAFFIC_BYTES_IN=$bytes_in
-TRAFFIC_BYTES_OUT=$bytes_out
+        # Update traffic values in cache
+        traffic_json=$(cat <<EOF
+{
+    "traffic_timestamp": $current_time,
+    "traffic_bytes_in": $bytes_in,
+    "traffic_bytes_out": $bytes_out
+}
 EOF
+        )
+        write_cache_values "$traffic_json"
     else
         traffic_down="N/A"
         traffic_up="N/A"
@@ -936,53 +950,40 @@ write_cache() {
     local arm_count="$2"
     local timestamp=$(date +%s)
 
-    # Preserve traffic data if it exists
-    traffic_data=""
-    if [ -f "$cache_file" ]; then
-        traffic_data=$(grep "^TRAFFIC_" "$cache_file" 2>/dev/null || true)
-    fi
-
-    cat > "$cache_file" <<EOF
-# System info cache
-# Generated: $(date)
-# Intel brew: /usr/local/bin/brew
-# ARM brew: /opt/homebrew/bin/brew
-BREW_OUTDATED_INTEL=$intel_count
-BREW_OUTDATED_ARM=$arm_count
-BREW_CACHE_TIMESTAMP=$timestamp
+    # Write brew data to JSON cache
+    brew_json=$(cat <<EOF
+{
+    "brew_outdated_intel": $intel_count,
+    "brew_outdated_arm": $arm_count,
+    "brew_timestamp": $timestamp
+}
 EOF
-
-    # Append traffic data if it exists
-    if [ ! -z "$traffic_data" ]; then
-        echo "$traffic_data" >> "$cache_file"
-    fi
+    )
+    write_cache_values "$brew_json"
 }
 
 # Check if cache exists and is recent
-if [ -f "$cache_file" ]; then
-    # Read timestamp from cache
-    cache_timestamp=$(grep "^BREW_CACHE_TIMESTAMP=" "$cache_file" 2>/dev/null | cut -d'=' -f2 || echo "0")
-    cache_age=$(($(date +%s) - cache_timestamp))
+cache_timestamp=$(read_cache_value "brew_timestamp" "0")
+cache_age=$(($(date +%s) - cache_timestamp))
 
-    if [ $cache_age -lt $cache_age_limit ]; then
-        # Use cached values
-        packages_outdated_intel=$(grep "^BREW_OUTDATED_INTEL=" "$cache_file" 2>/dev/null | cut -d'=' -f2 || echo "0")
-        packages_outdated_arm=$(grep "^BREW_OUTDATED_ARM=" "$cache_file" 2>/dev/null | cut -d'=' -f2 || echo "0")
-    else
-        # Cache is old, update it in background
-        # Read old values first
-        packages_outdated_intel=$(grep "^BREW_OUTDATED_INTEL=" "$cache_file" 2>/dev/null | cut -d'=' -f2 || echo "0")
-        packages_outdated_arm=$(grep "^BREW_OUTDATED_ARM=" "$cache_file" 2>/dev/null | cut -d'=' -f2 || echo "0")
+if [ $cache_age -lt $cache_age_limit ] && [ "$cache_timestamp" != "0" ]; then
+    # Use cached values
+    packages_outdated_intel=$(read_cache_value "brew_outdated_intel" "0")
+    packages_outdated_arm=$(read_cache_value "brew_outdated_arm" "0")
+elif [ "$cache_timestamp" != "0" ]; then
+    # Cache is old, update it in background
+    # Read old values first
+    packages_outdated_intel=$(read_cache_value "brew_outdated_intel" "0")
+    packages_outdated_arm=$(read_cache_value "brew_outdated_arm" "0")
 
-        # Update in background
-        (
-            intel_count="0"
-            arm_count="0"
-            [ -x "/usr/local/bin/brew" ] && intel_count=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ' || echo "0")
-            [ -x "/opt/homebrew/bin/brew" ] && arm_count=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ' || echo "0")
-            write_cache "$intel_count" "$arm_count"
-        ) &
-    fi
+    # Update in background
+    (
+        intel_count="0"
+        arm_count="0"
+        [ -x "/usr/local/bin/brew" ] && intel_count=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+        [ -x "/opt/homebrew/bin/brew" ] && arm_count=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+        write_cache "$intel_count" "$arm_count"
+    ) &
 else
     # No cache, create it in background
     packages_outdated_intel="0"
