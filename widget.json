@@ -1,5 +1,6 @@
 {
   "name": "SystemInfoWidget",
+  "version": "1.2",
   "description": "Comprehensive system monitoring with real-time network traffic by app, dual Homebrew support, and APFS-accurate disk usage",
   "author": "Nick Gorbikoff",
   "email": "nick@gorbikoff.com"
