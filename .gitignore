@@ -24,4 +24,3 @@ node_modules/
 # Private/sensitive files
 *.private
 *.secret
-.cache.json

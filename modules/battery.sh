@@ -65,7 +65,8 @@ get_time_machine_status() {
     local tm_destination="N/A"
 
     if command -v tmutil &> /dev/null; then
-        local tm_status=$(tmutil status 2>/dev/null)
+        # Use timeout to prevent hanging
+        local tm_status=$(timeout 2 tmutil status 2>/dev/null)
         if [ ! -z "$tm_status" ]; then
             # Check if backup is running
             if echo "$tm_status" | grep -q "Running = 1"; then
@@ -82,8 +83,8 @@ get_time_machine_status() {
                 fi
             fi
 
-            # Get last backup
-            local last_backup_path=$(tmutil latestbackup 2>/dev/null)
+            # Get last backup with timeout
+            local last_backup_path=$(timeout 2 tmutil latestbackup 2>/dev/null)
             if [ ! -z "$last_backup_path" ]; then
                 local backup_name=$(basename "$last_backup_path")
                 if [[ "$backup_name" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})-([0-9]{2})([0-9]{2})([0-9]{2}) ]]; then

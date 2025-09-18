@@ -2,6 +2,21 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [2.1] - 2025-01-18
+
+### Improved
+- **Aggressive caching strategy** - Widget never blocks on slow commands
+- **Consistent performance** - Execution time variance reduced from 1.2-43s to consistent 2-3s
+- **Background updates** - All expensive operations (brew outdated, asdf) now update cache asynchronously
+- **Singleton pattern** - Prevents duplicate background jobs from competing for resources
+- **Zero blocking** - Always returns cached values immediately while refreshing in background
+
+### Fixed
+- Performance degradation when cache expired causing 40+ second execution times
+- Synchronous execution of brew outdated commands blocking for 20-30 seconds
+- Multiple asdf current calls causing unnecessary delays
+- Background job race conditions from parallel cache updates
+
 ## [2.0] - 2025-01-18
 
 ### Added

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Modular system info collector with parallel execution
-# Version: 2.0 - All features, optimized for speed
+# Version: 2.1 - All features, optimized for speed with aggressive caching
 
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

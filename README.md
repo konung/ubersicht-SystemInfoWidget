@@ -1,6 +1,6 @@
 # SystemInfoWidget for Übersicht
 
-**Version 2.0**
+**Version 2.1**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
@@ -60,6 +60,14 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Live backup progress indicator
 - Last backup date and time (ISO format)
 - Backup destination display
+
+## What's New in Version 2.1
+
+### Performance Optimizations (v2.1)
+- **Aggressive caching** - Never blocks on slow commands (brew, asdf)
+- **Consistent execution times** - Reduced variance from 1.2-43s to consistent 2-3s
+- **Background updates** - All expensive operations now update cache asynchronously
+- **Singleton pattern** - Prevents duplicate background jobs from competing
 
 ## What's New in Version 2.0
 

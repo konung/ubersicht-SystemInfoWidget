@@ -191,7 +191,7 @@ config =
     " ⠀⠀⠀⠈⠙⢿⣿⣿⣿⠿⠟⠛⠻⠿⣿⣿⣿⡿⠋⠀⠀⠀ "
   ]
 
-command: "NETWORK_APPS_COUNT=#{config.display.networkAppsCount} SKIP_NETWORK_APPS='#{config.display.skipNetworkApps.join(',')}' SystemInfoWidget.widget/system-info-modular.sh"
+command: "NETWORK_APPS_COUNT=#{config.display.networkAppsCount} SKIP_NETWORK_APPS='#{config.display.skipNetworkApps.join(',')}' SystemInfoWidget.widget/system-info.sh"
 
 refreshFrequency: config.refreshFrequency
 
