@@ -94,11 +94,12 @@ config =
   # Languages to display (comment out ones you don't want)
   languages: [
     'ruby'
-    'nodejs'
     'python'
+    'nodejs'
     'crystal'
+    'bun'
     'elixir'
-    # Add more as needed: 'rust', 'go', 'java', 'php', etc.
+    'nim'
   ]
   # Icons (Unicode characters and emojis)
   icons:
@@ -112,6 +113,8 @@ config =
     languages: ''    # 📝 Programming languages (Nerd Font code)
     ruby: ''         # 💎 Ruby (Nerd Font)
     nodejs: ''       # 📦 Node.js (Nerd Font)
+    bun: '󰙯'          # 🍞 Bun (Nerd Font)
+    nim: '󰒲'          # 🦕 Nim (Nerd Font)
     python: ''       # 🐍 Python (Nerd Font)
     crystal: ''      # 💎 Crystal (Nerd Font)
     elixir: ''       # 💧 Elixir (Nerd Font)
@@ -188,7 +191,7 @@ config =
     " ⠀⠀⠀⠈⠙⢿⣿⣿⣿⠿⠟⠛⠻⠿⣿⣿⣿⡿⠋⠀⠀⠀ "
   ]
 
-command: "NETWORK_APPS_COUNT=#{config.display.networkAppsCount} SKIP_NETWORK_APPS='#{config.display.skipNetworkApps.join(',')}' SystemInfoWidget.widget/system-info.sh"
+command: "NETWORK_APPS_COUNT=#{config.display.networkAppsCount} SKIP_NETWORK_APPS='#{config.display.skipNetworkApps.join(',')}' SystemInfoWidget.widget/system-info-modular.sh"
 
 refreshFrequency: config.refreshFrequency
 
@@ -325,47 +328,51 @@ update: (output, domEl) ->
       #{infoLine(cfg.icons.kernel, "Kernel", sys.kernel)}
       #{infoLine(cfg.icons.uptime, "Uptime", "#{uptimeStr} | #{currentDateTime}")}
       #{(() ->
-        # Show both Intel (x86) and ARM brew stats
-        intelCount = parseInt(sys.packages_brew_intel || 0)
-        armCount = parseInt(sys.packages_brew_arm || 0)
-        totalCount = intelCount + armCount
+        # Use new packages structure
+        packages = data.packages
+        if packages
+          # Show both Intel (x86) and ARM brew stats
+          intelCount = parseInt(packages.brew_intel || 0)
+          armCount = parseInt(packages.brew_arm || 0)
+          totalCount = intelCount + armCount
 
-        intelOutdated = parseInt(sys.packages_outdated_intel || 0)
-        armOutdated = parseInt(sys.packages_outdated_arm || 0)
+          intelOutdated = parseInt(packages.outdated_intel || 0)
+          armOutdated = parseInt(packages.outdated_arm || 0)
 
-        # Format the display
-        brewInfo = "#{totalCount} total"
+          # Format the display
+          brewInfo = "#{totalCount} total"
 
-        # Show breakdown if both exist
-        if intelCount > 0 and armCount > 0
-          brewInfo = "#{intelCount} x86"
-          if intelOutdated > 0
-            outdatedColor = if intelOutdated > 50 then 'danger' else if intelOutdated > 10 then 'warning' else 'success'
-            brewInfo += " (#{colorize(intelOutdated + '↑', outdatedColor)})"
+          # Show breakdown if both exist
+          if intelCount > 0 and armCount > 0
+            brewInfo = "#{intelCount} x86"
+            if intelOutdated > 0
+              outdatedColor = if intelOutdated > 50 then 'danger' else if intelOutdated > 10 then 'warning' else 'success'
+              brewInfo += " (#{colorize(intelOutdated + '↑', outdatedColor)})"
 
-          brewInfo += ", #{armCount} arm"
-          if armOutdated > 0
-            outdatedColor = if armOutdated > 50 then 'danger' else if armOutdated > 10 then 'warning' else 'success'
-            brewInfo += " (#{colorize(armOutdated + '↑', outdatedColor)})"
-        else if intelCount > 0
-          # Only Intel
-          brewInfo = "#{intelCount} (x86)"
-          if intelOutdated > 0
-            outdatedColor = if intelOutdated > 50 then 'danger' else if intelOutdated > 10 then 'warning' else 'success'
-            brewInfo += " • #{colorize(intelOutdated + ' need update', outdatedColor)}"
-        else if armCount > 0
-          # Only ARM
-          brewInfo = "#{armCount} (arm)"
-          if armOutdated > 0
-            outdatedColor = if armOutdated > 50 then 'danger' else if armOutdated > 10 then 'warning' else 'success'
-            brewInfo += " • #{colorize(armOutdated + ' need update', outdatedColor)}"
+            brewInfo += ", #{armCount} arm"
+            if armOutdated > 0
+              outdatedColor = if armOutdated > 50 then 'danger' else if armOutdated > 10 then 'warning' else 'success'
+              brewInfo += " (#{colorize(armOutdated + '↑', outdatedColor)})"
+          else if intelCount > 0
+            # Only Intel
+            brewInfo = "#{intelCount} (x86)"
+            if intelOutdated > 0
+              outdatedColor = if intelOutdated > 50 then 'danger' else if intelOutdated > 10 then 'warning' else 'success'
+              brewInfo += " • #{colorize(intelOutdated + ' need update', outdatedColor)}"
+          else if armCount > 0
+            # Only ARM
+            brewInfo = "#{armCount} (arm)"
+            if armOutdated > 0
+              outdatedColor = if armOutdated > 50 then 'danger' else if armOutdated > 10 then 'warning' else 'success'
+              brewInfo += " • #{colorize(armOutdated + ' need update', outdatedColor)}"
 
-        infoLine(cfg.icons.brew, "Brew", brewInfo)
+          infoLine(cfg.icons.brew, "Brew", brewInfo)
+        else
+          ""
       )()}
       #{infoLine(cfg.icons.shell, "Shell", sys.shell)}
       #{infoLine(cfg.icons.resolution, "Resolution", hw.resolution)}
       #{infoLine(cfg.icons.theme, "Appearance", sys.wm_theme.replace('Blue ', ''))}
-      #{infoLine(cfg.icons.terminal, "Terminal", sys.terminal)}
       #{infoLine(cfg.icons.gpu, "GPU", hw.gpu)}
       #{infoLine(cfg.icons.memory, "Memory", "#{memUsedGB.toFixed(1)} GB / #{memTotalGB.toFixed(0)} GB")}
     """
@@ -552,37 +559,46 @@ update: (output, domEl) ->
     $('#cpuInfo').html('')
 
   # Dev/Software Information
-  if cfg.display.showDev
-    sys = data.system
+  if cfg.display.showDev and data.dev
+    dev = data.dev
+    packages = data.packages
 
     devContent = sectionHeader("Dev/Software")
 
+    # Show package counts - only Brew
+    if packages
+      # Brew packages
+      totalBrew = (packages.brew_intel || 0) + (packages.brew_arm || 0) +
+                  (packages.brew_intel_cask || 0) + (packages.brew_arm_cask || 0)
+      totalOutdated = (packages.outdated_intel || 0) + (packages.outdated_arm || 0)
+
+      if totalBrew > 0
+        brewInfo = "#{totalBrew} packages"
+        if totalOutdated > 0
+          brewInfo += " (#{totalOutdated} outdated)"
+        devContent += infoLine(cfg.icons.brew, "Brew", brewInfo)
+
     # Show language versions if enabled
-    if cfg.display.showLanguages and sys.version_manager
-      # Build string of configured languages and their versions
-        # Show version manager at the bottom
-      if sys.version_manager != "none"
-        devContent += infoLine(cfg.icons.languages, "Manager", sys.version_manager)
+    if cfg.display.showLanguages and dev.languages
+      # Show version manager
+      if dev.version_manager and dev.version_manager != "none"
+        devContent += infoLine(cfg.icons.languages, "Manager", dev.version_manager)
 
+      # Show each language
       for lang in cfg.languages
-        langKey = "lang_#{lang}"
-        # Handle nodejs special case
-        langKey = "lang_nodejs" if lang == "nodejs" or lang == "node"
+        # Get version from new structure
+        version = dev.languages[lang]
 
-        version = sys[langKey]
-        if version and version != "N/A"
+        if version and version != "N/A" and version != ""
           # Shorten version display
           shortVersion = version.split('-')[0]  # Remove pre-release/build info
+
           # Get language-specific icon or use default
-          langIcon = if lang == "node"
-            cfg.icons["nodejs"] or "📦"
-          else
-            cfg.icons[lang] or "📦"
+          langIcon = cfg.icons[lang] || cfg.icons.package || "📦"
+
           # Capitalize language name for display
           displayName = lang.charAt(0).toUpperCase() + lang.slice(1)
           devContent += infoLine(langIcon, displayName, shortVersion)
-
-
 
     devHtml = infoGroup(devContent)
     $('#devInfo').html(devHtml)
