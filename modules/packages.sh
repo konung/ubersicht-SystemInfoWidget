@@ -38,40 +38,51 @@ get_package_info() {
         # Update cache in background ONLY if not already running
         if ! pgrep -f "brew_cache_update" > /dev/null 2>&1; then
             (
-            # Mark this as brew_cache_update process
-            exec -a brew_cache_update bash -c '
-            # Intel brew
-            if [ -x "/usr/local/bin/brew" ]; then
-                intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-                intel_cask=$(/usr/local/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-                intel_outdated=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
-            else
-                intel_count=0
-                intel_cask=0
-                intel_outdated=0
-            fi
+            # Create a temporary script to run in background
+            cat > /tmp/brew_cache_update.$$ << 'EOF'
+#!/bin/bash
+# Intel brew
+if [ -x "/usr/local/bin/brew" ]; then
+    intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
+    intel_cask=$(/usr/local/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
+    intel_outdated=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
+else
+    intel_count=0
+    intel_cask=0
+    intel_outdated=0
+fi
 
-            # ARM brew
-            if [ -x "/opt/homebrew/bin/brew" ]; then
-                arm_count=$(/opt/homebrew/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-                arm_cask=$(/opt/homebrew/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-                arm_outdated=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
-            else
-                arm_count=0
-                arm_cask=0
-                arm_outdated=0
-            fi
+# ARM brew
+if [ -x "/opt/homebrew/bin/brew" ]; then
+    arm_count=$(/opt/homebrew/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
+    arm_cask=$(/opt/homebrew/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
+    arm_outdated=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
+else
+    arm_count=0
+    arm_cask=0
+    arm_outdated=0
+fi
 
-            write_cache_values "{
-                \"brew_intel_count\": $intel_count,
-                \"brew_arm_count\": $arm_count,
-                \"brew_intel_cask\": $intel_cask,
-                \"brew_arm_cask\": $arm_cask,
-                \"brew_outdated_intel\": $intel_outdated,
-                \"brew_outdated_arm\": $arm_outdated,
-                \"brew_timestamp\": $(date +%s)
-            }"
-            ' ) &
+# Source the core functions
+CACHE_FILE="$1"
+source "$(dirname "$CACHE_FILE")/modules/core.sh"
+
+write_cache_values "{
+    \"brew_intel_count\": $intel_count,
+    \"brew_arm_count\": $arm_count,
+    \"brew_intel_cask\": $intel_cask,
+    \"brew_arm_cask\": $arm_cask,
+    \"brew_outdated_intel\": $intel_outdated,
+    \"brew_outdated_arm\": $arm_outdated,
+    \"brew_timestamp\": $(date +%s)
+}"
+
+# Clean up
+rm -f /tmp/brew_cache_update.$$
+EOF
+            chmod +x /tmp/brew_cache_update.$$
+            exec -a brew_cache_update /tmp/brew_cache_update.$$ "$CACHE_FILE"
+            ) &
         fi
     fi
 

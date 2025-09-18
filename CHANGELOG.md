@@ -2,6 +2,13 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [2.1.1] - 2025-01-18
+
+### Fixed
+- Background brew cache update script syntax error causing shell errors
+- Replaced complex inline quoting with temporary script approach
+- Added tmutil command timeouts to prevent hanging
+
 ## [2.1] - 2025-01-18
 
 ### Improved
