@@ -1,7 +1,7 @@
 # ==============================================================================
 # SystemInfoWidget - Advanced System Monitor for Übersicht
 # ==============================================================================
-# Version: 3.1.0
+# Version: 3.1.1
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 #
@@ -22,7 +22,7 @@ config =
   # ----------------------------------------------------------------------------
   # Widget Metadata
   # ----------------------------------------------------------------------------
-  version: '3.1.0'
+  version: '3.1.1'
   refreshFrequency: 5000  # Update interval in milliseconds (2.5 seconds)
 
   # ----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # SystemInfoWidget for Übersicht
 
-**Version 3.1.0**
+**Version 3.1.1**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 

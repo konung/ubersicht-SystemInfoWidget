@@ -1,6 +1,6 @@
 #!/bin/bash
 # Modular system info collector with parallel execution
-# Version: 3.1.0 - Modular architecture with lib directory structure
+# Version: 3.1.1 - Documentation and minor fixes
 
 # Track start time for execution measurement (only if requested)
 if [ "$MEASURE_TIME" = "true" ]; then

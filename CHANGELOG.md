@@ -2,6 +2,17 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.1.1] - 2025-01-20
+
+### Changed
+- Updated documentation to include minimal development tools disclosure
+- Fixed module path reference in packages.sh background script
+- Updated all version references to maintain consistency
+
+### Improved
+- Cleaner git history with focused commits
+- More accurate documentation reflecting actual development process
+
 ## [3.1.0] - 2025-01-20
 
 ### Major Bug Fixes & Refactoring
