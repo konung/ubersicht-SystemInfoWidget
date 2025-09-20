@@ -2,13 +2,13 @@
 
 module.exports = (config) ->
   # Load all modules
-  helpers = require('./helpers.coffee.module')
-  logoRenderer = require('./logo-renderer.coffee.module')(config, helpers)
-  systemRenderer = require('./system-renderer.coffee.module')(config, helpers)
-  networkRenderer = require('./network-renderer.coffee.module')(config, helpers)
-  storageRenderer = require('./storage-renderer.coffee.module')(config, helpers)
-  cpuRenderer = require('./cpu-renderer.coffee.module')(config, helpers)
-  devRenderer = require('./dev-renderer.coffee.module')(config, helpers)
+  helpers = require('./helpers.lib')
+  logoRenderer = require('./logo-renderer.lib')(config, helpers)
+  systemRenderer = require('./system-renderer.lib')(config, helpers)
+  networkRenderer = require('./network-renderer.lib')(config, helpers)
+  storageRenderer = require('./storage-renderer.lib')(config, helpers)
+  cpuRenderer = require('./cpu-renderer.lib')(config, helpers)
+  devRenderer = require('./dev-renderer.lib')(config, helpers)
 
   renderAll: (data, domEl) ->
     # Use querySelector from domEl

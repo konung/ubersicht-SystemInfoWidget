@@ -1,7 +1,7 @@
 # ==============================================================================
 # SystemInfoWidget - Advanced System Monitor for Übersicht
 # ==============================================================================
-# Version: 3.0.3
+# Version: 3.0.4
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 #
@@ -22,7 +22,7 @@ config =
   # ----------------------------------------------------------------------------
   # Widget Metadata
   # ----------------------------------------------------------------------------
-  version: '3.0.3'
+  version: '3.0.4'
   refreshFrequency: 2500  # Update interval in milliseconds (2.5 seconds)
 
   # ----------------------------------------------------------------------------
@@ -340,13 +340,13 @@ update: (output, domEl) ->
   $ = (selector) -> domEl.querySelector(selector)
 
   # Load ui-modules
-  helpers = require('./ui-modules/helpers.coffee.module')
-  logoRenderer = require('./ui-modules/logo-renderer.coffee.module')(config, helpers)
-  systemRenderer = require('./ui-modules/system-renderer.coffee.module')(config, helpers)
-  networkRenderer = require('./ui-modules/network-renderer.coffee.module')(config, helpers)
-  storageRenderer = require('./ui-modules/storage-renderer.coffee.module')(config, helpers)
-  cpuRenderer = require('./ui-modules/cpu-renderer.coffee.module')(config, helpers)
-  devRenderer = require('./ui-modules/dev-renderer.coffee.module')(config, helpers)
+  helpers = require('./ui-modules/helpers.lib')
+  logoRenderer = require('./ui-modules/logo-renderer.lib')(config, helpers)
+  systemRenderer = require('./ui-modules/system-renderer.lib')(config, helpers)
+  networkRenderer = require('./ui-modules/network-renderer.lib')(config, helpers)
+  storageRenderer = require('./ui-modules/storage-renderer.lib')(config, helpers)
+  cpuRenderer = require('./ui-modules/cpu-renderer.lib')(config, helpers)
+  devRenderer = require('./ui-modules/dev-renderer.lib')(config, helpers)
 
   # Render all sections
   logoRenderer.render(data, $)

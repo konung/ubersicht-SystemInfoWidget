@@ -2,6 +2,13 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.0.4] - 2025-01-20
+
+### Fixed
+- Module files now use `.lib` extension to completely avoid Übersicht parsing
+- Fixes "Unexpected token ILLEGAL" errors from `.coffee.module` files
+- All module references updated to use `.lib` extension
+
 ## [3.0.3] - 2025-01-20
 
 ### Fixed
