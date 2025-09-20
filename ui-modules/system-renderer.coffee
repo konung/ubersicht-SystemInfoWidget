@@ -61,7 +61,11 @@ module.exports = (config, helpers) ->
 
       systemContent += helpers.infoLine(config.icons.brew, "Brew", brewInfo, config)
 
-    systemContent += helpers.infoLine(config.icons.shell, "Shell", sys.shell, config)
+    # Display shell with version if available
+    shellInfo = sys.shell
+    if sys.shell_version and sys.shell_version != "unknown"
+      shellInfo = "#{sys.shell} #{sys.shell_version}"
+    systemContent += helpers.infoLine(config.icons.shell, "Shell", shellInfo, config)
     systemContent += helpers.infoLine(config.icons.resolution, "Resolution", hw.resolution, config)
     if sys.wm_theme
       systemContent += helpers.infoLine(config.icons.theme, "Appearance", sys.wm_theme.replace('Blue ', ''), config)

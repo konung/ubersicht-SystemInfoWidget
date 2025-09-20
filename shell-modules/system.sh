@@ -11,6 +11,22 @@ get_system_info() {
     local kernel=$(uname -r)
     local build=$(sw_vers -buildVersion)
     local shell="$(basename $SHELL)"
+    local shell_version=""
+    # Get shell version based on shell type
+    case "$shell" in
+        zsh)
+            shell_version="$($SHELL --version | awk '{print $2}')"
+            ;;
+        bash)
+            shell_version="$($SHELL --version | head -1 | awk '{print $4}')"
+            ;;
+        fish)
+            shell_version="$($SHELL --version | awk '{print $3}')"
+            ;;
+        *)
+            shell_version="unknown"
+            ;;
+    esac
     local desktop_env="Aqua"
     local window_manager="Quartz Compositor"
     local wm_theme=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo 'Light')
@@ -62,6 +78,7 @@ get_system_info() {
     "kernel": "$kernel",
     "build": "$build",
     "shell": "$shell",
+    "shell_version": "$shell_version",
     "desktop_env": "$desktop_env",
     "window_manager": "$window_manager",
     "wm_theme": "$wm_theme",
