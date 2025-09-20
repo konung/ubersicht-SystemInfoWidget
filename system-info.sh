@@ -2,10 +2,15 @@
 # Modular system info collector with parallel execution
 # Version: 2.1.1 - All features, optimized for speed with aggressive caching and syntax fixes
 
+# Track start time for execution measurement (only if requested)
+if [ "$MEASURE_TIME" = "true" ]; then
+    START_TIME=$(($(date +%s%N)/1000000))
+fi
+
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CACHE_FILE="$SCRIPT_DIR/.cache.json"
-MODULES_DIR="$SCRIPT_DIR/modules"
+MODULES_DIR="$SCRIPT_DIR/shell-modules"
 TEMP_DIR=$(mktemp -d)
 
 # Cleanup on exit
@@ -129,4 +134,8 @@ jq -n \
             version_manager: $languages[0].version_manager,
             languages: ($languages[0] | del(.version_manager))
         }
-    }'
+    }' | if [ "$MEASURE_TIME" = "true" ]; then
+        jq --arg exec_time "$(($(date +%s%N)/1000000 - START_TIME))" '. + {execution_time: ($exec_time | tonumber)}'
+    else
+        cat
+    fi
