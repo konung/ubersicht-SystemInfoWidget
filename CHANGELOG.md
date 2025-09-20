@@ -2,6 +2,43 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.0.1] - 2025-01-20
+
+### Changed
+- **Major UI code restructuring** - Complete modularization of CoffeeScript rendering code
+- Widget reduced from 720 lines to 480 lines (33% reduction)
+- Created 9 dedicated UI modules using CommonJS pattern:
+  - `helpers.coffee` - Shared utility functions
+  - `system-renderer.coffee` - System info rendering
+  - `network-renderer.coffee` - Network interfaces and traffic
+  - `storage-renderer.coffee` - Disk usage display
+  - `cpu-renderer.coffee` - CPU usage and processes
+  - `dev-renderer.coffee` - Development tools and languages
+  - `logo-renderer.coffee` - ASCII logo rendering
+  - `widget-renderer.coffee` - Main orchestrator module (removed due to Übersicht constraints)
+- Reorganized folder structure:
+  - `shell-modules/` - Bash script modules for data collection
+  - `ui-modules/` - CoffeeScript modules for UI rendering
+- Improved code organization with clear section headers and documentation
+
+### Added
+- **Debug footer** - Optional performance monitoring display (disabled by default)
+  - Shows widget version, total execution time, and refresh frequency
+  - Configurable via `config.display.showDebugFooter`
+  - Zero performance impact when disabled
+  - Tracks both shell script execution time and rendering time
+- Shell script execution time measurement (conditional, only when debug footer enabled)
+
+### Fixed
+- Module loading issues with Übersicht's Browserify/CoffeeScript 1.x environment
+- Reserved word conflicts ('location' renamed to 'publicLocation')
+- Undefined display errors in widget rendering
+
+### Technical Details
+- Übersicht uses CoffeeScript 1.12.7 with Browserify for module bundling
+- Modules use CommonJS (require/module.exports) pattern
+- Styles must remain inline due to Übersicht parse-time evaluation constraints
+
 ## [2.1.1] - 2025-01-18
 
 ### Fixed

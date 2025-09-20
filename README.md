@@ -1,6 +1,6 @@
 # SystemInfoWidget for Übersicht
 
-**Version 2.1.1**
+**Version 3.0.1**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
@@ -61,12 +61,25 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Last backup date and time (ISO format)
 - Backup destination display
 
-## What's New in Version 2.1.1
+## What's New in Version 3.0.1
 
-### Bug Fixes (v2.1.1)
-- **Fixed syntax errors** - Resolved background brew cache update script errors
-- **Improved stability** - Added tmutil command timeouts to prevent hanging
-- **Better error handling** - Replaced complex inline quoting with temporary script files
+### Major UI Architecture Overhaul (v3.0.1)
+- **Complete modularization** - UI code split into 9 focused CoffeeScript modules
+- **33% code reduction** - Main widget file reduced from 720 to 480 lines
+- **Improved maintainability** - Clear separation between data collection (shell-modules) and UI rendering (ui-modules)
+- **Debug footer** - Optional performance monitoring for development (disabled by default)
+- **Better organization** - Clear section headers and comprehensive documentation
+
+### New Module Structure
+- `ui-modules/` - CoffeeScript rendering modules using CommonJS pattern
+  - `helpers.coffee` - Shared utility functions
+  - `system-renderer.coffee` - System info rendering
+  - `network-renderer.coffee` - Network interfaces and traffic
+  - `storage-renderer.coffee` - Disk usage display
+  - `cpu-renderer.coffee` - CPU usage and processes
+  - `dev-renderer.coffee` - Development tools and languages
+  - `logo-renderer.coffee` - ASCII logo rendering
+- `shell-modules/` - Bash script modules for data collection
 
 ## What's New in Version 2.1
 
@@ -83,9 +96,36 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Parallel execution of all data collection modules
 - Optimized caching system with JSON format
 
-### Architecture Overhaul
-- Complete modularization - Split monolithic 1200-line script into 7 focused modules
-- Better maintainability and extensibility
+### Architecture
+
+### Version 3.0+ Structure
+The widget now features a fully modular architecture:
+
+```
+SystemInfoWidget.widget/
+├── index.coffee           # Main widget file (configuration and orchestration)
+├── system-info.sh        # Main data collection script
+├── shell-modules/        # Bash modules for system data collection
+│   ├── core.sh          # Utility functions and caching
+│   ├── system.sh        # System and hardware info
+│   ├── network.sh       # Network interfaces and traffic
+│   ├── packages.sh      # Package managers (brew, npm, pip)
+│   ├── storage.sh       # Disk usage with APFS support
+│   ├── battery.sh       # Battery and Time Machine status
+│   └── processes.sh     # CPU processes monitoring
+└── ui-modules/          # CoffeeScript modules for UI rendering
+    ├── helpers.coffee    # Shared UI utilities
+    ├── system-renderer.coffee
+    ├── network-renderer.coffee
+    ├── storage-renderer.coffee
+    ├── cpu-renderer.coffee
+    ├── dev-renderer.coffee
+    └── logo-renderer.coffee
+```
+
+### Shell Module Architecture (v2.0+)
+- Complete modularization - Split monolithic script into focused modules
+- Parallel execution for 71% performance improvement
 - Each module can be updated independently
 
 ### Enhanced Features
@@ -207,6 +247,7 @@ display:
   showDev: true           # Developer tools & languages
   showLanguages: true     # Programming language versions
   showNetworkApps: true   # Per-app network traffic
+  showDebugFooter: false  # Debug footer with timing info (for development)
   networkAppsCount: 3     # Number of network apps (1-5)
 ```
 
