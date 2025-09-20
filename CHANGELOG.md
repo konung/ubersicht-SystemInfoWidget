@@ -2,6 +2,13 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.0.2] - 2025-01-20
+
+### Fixed
+- Shell version not displaying - now shows version alongside shell name (e.g., "zsh 5.9")
+- Resolution icon displaying incorrectly - fixed corrupted icon definition
+- Added shell version detection for zsh, bash, and fish shells
+
 ## [3.0.1] - 2025-01-20
 
 ### Changed

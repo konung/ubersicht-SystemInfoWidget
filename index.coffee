@@ -1,7 +1,7 @@
 # ==============================================================================
 # SystemInfoWidget - Advanced System Monitor for Übersicht
 # ==============================================================================
-# Version: 3.0.1
+# Version: 3.0.2
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 #
@@ -22,7 +22,7 @@ config =
   # ----------------------------------------------------------------------------
   # Widget Metadata
   # ----------------------------------------------------------------------------
-  version: '3.0.1'
+  version: '3.0.2'
   refreshFrequency: 2500  # Update interval in milliseconds (2.5 seconds)
 
   # ----------------------------------------------------------------------------
@@ -200,7 +200,7 @@ config =
     battery: ''      # 🔋 Battery (Nerd Font)
     batteryCharging: '' # ⚡ Battery charging (Nerd Font)
     batteryLow: ''   # 🪫 Battery low (Nerd Font)
-    resolution: ''   # 🖥️ Display resolution (Nerd Font - desktop)
+    resolution: ''   # Display resolution (Nerd Font - monitor)
     desktop: ''      # 🖼️ Desktop Environment (Nerd Font - window maximize)
     wm: ''           # 🪟 Window Manager (Nerd Font - window restore)
     theme: '󰔎'        # 🎨 Theme (Nerd Font - palette)
