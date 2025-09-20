@@ -447,7 +447,10 @@ MIT License - feel free to modify and distribute
 
 Pull requests are welcome! Please feel free to submit issues or improvements.
 
+## Development Tools
+
+- [Claude Code](https://claude.ai/code) was used to help understand Übersicht's documentation and debug compatibility issues during the v3.x refactoring.
 
 ## Credits
 
-Inspired by Übersicht widgets NetFullSysInfo and neofetch.
+- Inspired by Übersicht widgets NetFullSysInfo and neofetch
