@@ -1,6 +1,6 @@
 # SystemInfoWidget for Übersicht
 
-**Version 3.0.2**
+**Version 3.1.0**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
@@ -61,17 +61,27 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Last backup date and time (ISO format)
 - Backup destination display
 
-## What's New in Version 3.0.1
+## What's New in Version 3.1.0
+
+### Major Bug Fixes & Complete Refactoring (v3.1.0)
+- **Fixed critical Übersicht compatibility issues** - Modules no longer show as separate widgets
+- **Proper module organization** - All modules now in `/lib` directory per Übersicht conventions
+- **Fixed widget display** - Resolved empty rectangle and vertical column layout issues
+- **Corrected widget identification** - Widget now properly shows as "SystemInfoWidget"
+- **Enhanced shell info** - Now displays shell version alongside shell name
+- **Fixed display bugs** - Resolution icon and other display elements corrected
+
+## What's New in Version 3.0
 
 ### Major UI Architecture Overhaul (v3.0.1)
 - **Complete modularization** - UI code split into 9 focused CoffeeScript modules
 - **33% code reduction** - Main widget file reduced from 720 to 480 lines
-- **Improved maintainability** - Clear separation between data collection (shell-modules) and UI rendering (ui-modules)
+- **Improved maintainability** - Clear separation between data collection (shell-modules) and UI rendering (lib modules)
 - **Debug footer** - Optional performance monitoring for development (disabled by default)
 - **Better organization** - Clear section headers and comprehensive documentation
 
 ### New Module Structure
-- `ui-modules/` - CoffeeScript rendering modules using CommonJS pattern
+- `lib/` - CoffeeScript rendering modules using CommonJS pattern (Übersicht ignores /lib per documentation)
   - `helpers.coffee` - Shared utility functions
   - `system-renderer.coffee` - System info rendering
   - `network-renderer.coffee` - Network interfaces and traffic
@@ -105,22 +115,23 @@ The widget now features a fully modular architecture:
 SystemInfoWidget.widget/
 ├── index.coffee           # Main widget file (configuration and orchestration)
 ├── system-info.sh        # Main data collection script
-├── shell-modules/        # Bash modules for system data collection
-│   ├── core.sh          # Utility functions and caching
-│   ├── system.sh        # System and hardware info
-│   ├── network.sh       # Network interfaces and traffic
-│   ├── packages.sh      # Package managers (brew, npm, pip)
-│   ├── storage.sh       # Disk usage with APFS support
-│   ├── battery.sh       # Battery and Time Machine status
-│   └── processes.sh     # CPU processes monitoring
-└── ui-modules/          # CoffeeScript modules for UI rendering
-    ├── helpers.coffee    # Shared UI utilities
-    ├── system-renderer.coffee
-    ├── network-renderer.coffee
-    ├── storage-renderer.coffee
-    ├── cpu-renderer.coffee
-    ├── dev-renderer.coffee
-    └── logo-renderer.coffee
+└── lib/                 # All modules (Übersicht ignores /lib directory)
+    ├── ui-modules/      # CoffeeScript modules for UI rendering
+    │   ├── helpers.coffee    # Shared UI utilities
+    │   ├── system-renderer.coffee
+    │   ├── network-renderer.coffee
+    │   ├── storage-renderer.coffee
+    │   ├── cpu-renderer.coffee
+    │   ├── dev-renderer.coffee
+    │   └── logo-renderer.coffee
+    └── shell-modules/   # Bash modules for system data collection
+        ├── core.sh      # Utility functions and caching
+        ├── system.sh    # System and hardware info
+        ├── network.sh   # Network interfaces and traffic
+        ├── packages.sh  # Package managers (brew, npm, pip)
+        ├── storage.sh   # Disk usage with APFS support
+        ├── battery.sh   # Battery and Time Machine status
+        └── processes.sh # CPU processes monitoring
 ```
 
 ### Shell Module Architecture (v2.0+)

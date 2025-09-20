@@ -1,6 +1,6 @@
 #!/bin/bash
 # Modular system info collector with parallel execution
-# Version: 2.1.1 - All features, optimized for speed with aggressive caching and syntax fixes
+# Version: 3.1.0 - Modular architecture with lib directory structure
 
 # Track start time for execution measurement (only if requested)
 if [ "$MEASURE_TIME" = "true" ]; then
@@ -10,7 +10,7 @@ fi
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CACHE_FILE="$SCRIPT_DIR/.cache.json"
-MODULES_DIR="$SCRIPT_DIR/shell-modules"
+MODULES_DIR="$SCRIPT_DIR/lib/shell-modules"
 TEMP_DIR=$(mktemp -d)
 
 # Cleanup on exit

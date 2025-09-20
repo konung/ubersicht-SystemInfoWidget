@@ -65,7 +65,7 @@ fi
 
 # Source the core functions
 CACHE_FILE="$1"
-source "$(dirname "$CACHE_FILE")/modules/core.sh"
+source "$(dirname "$CACHE_FILE")/lib/shell-modules/core.sh"
 
 write_cache_values "{
     \"brew_intel_count\": $intel_count,

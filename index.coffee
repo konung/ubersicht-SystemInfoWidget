@@ -1,7 +1,7 @@
 # ==============================================================================
 # SystemInfoWidget - Advanced System Monitor for Übersicht
 # ==============================================================================
-# Version: 3.0.4
+# Version: 3.1.0
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 #
@@ -22,8 +22,8 @@ config =
   # ----------------------------------------------------------------------------
   # Widget Metadata
   # ----------------------------------------------------------------------------
-  version: '3.0.4'
-  refreshFrequency: 2500  # Update interval in milliseconds (2.5 seconds)
+  version: '3.1.0'
+  refreshFrequency: 5000  # Update interval in milliseconds (2.5 seconds)
 
   # ----------------------------------------------------------------------------
   # Widget Position
@@ -339,14 +339,14 @@ update: (output, domEl) ->
   # Use querySelector from domEl
   $ = (selector) -> domEl.querySelector(selector)
 
-  # Load ui-modules
-  helpers = require('./ui-modules/helpers.lib')
-  logoRenderer = require('./ui-modules/logo-renderer.lib')(config, helpers)
-  systemRenderer = require('./ui-modules/system-renderer.lib')(config, helpers)
-  networkRenderer = require('./ui-modules/network-renderer.lib')(config, helpers)
-  storageRenderer = require('./ui-modules/storage-renderer.lib')(config, helpers)
-  cpuRenderer = require('./ui-modules/cpu-renderer.lib')(config, helpers)
-  devRenderer = require('./ui-modules/dev-renderer.lib')(config, helpers)
+  # Load modules from lib directory (Übersicht ignores /lib per documentation)
+  helpers = require('./lib/ui-modules/helpers.coffee')
+  logoRenderer = require('./lib/ui-modules/logo-renderer.coffee')(config, helpers)
+  systemRenderer = require('./lib/ui-modules/system-renderer.coffee')(config, helpers)
+  networkRenderer = require('./lib/ui-modules/network-renderer.coffee')(config, helpers)
+  storageRenderer = require('./lib/ui-modules/storage-renderer.coffee')(config, helpers)
+  cpuRenderer = require('./lib/ui-modules/cpu-renderer.coffee')(config, helpers)
+  devRenderer = require('./lib/ui-modules/dev-renderer.coffee')(config, helpers)
 
   # Render all sections
   logoRenderer.render(data, $)
@@ -378,8 +378,12 @@ style: """
     margin: 0
     padding: 0
 
+  .container
+    display: inline-block
+
   .main-content
     display: flex
+    flex-direction: row
     gap: #{config.layout.columnGap}px
     align-items: flex-start
 
@@ -387,6 +391,7 @@ style: """
     display: flex
     flex-direction: column
     gap: #{config.layout.infoGroupGap}px
+    vertical-align: top
 
   .column-1
     flex: 0 0 auto
@@ -475,6 +480,11 @@ style: """
   .debug-footer .separator
     opacity: 0.2
 """
+
+# ==============================================================================
+# Widget Name Export (fixes display name in Übersicht)
+# ==============================================================================
+name: "SystemInfoWidget"
 
 # ==============================================================================
 # END OF WIDGET

@@ -2,19 +2,77 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.1.0] - 2025-01-20
+
+### Major Bug Fixes & Refactoring
+This release represents a complete architectural overhaul to resolve critical Übersicht compatibility issues.
+
+### Fixed
+- **Critical: Module Loading Issue** - UI modules were being loaded as separate widgets by Übersicht
+  - Moved all modules to `/lib` directory per Übersicht documentation
+  - Files in `/lib` are properly ignored by Übersicht's widget scanner
+  - Resolved "Unexpected token ILLEGAL" parsing errors
+
+- **Widget Display Issues**
+  - Fixed empty rectangle rendering due to style property configuration
+  - Fixed column layout displaying vertically instead of horizontally
+  - Corrected CSS flexbox implementation for proper column display
+
+- **Widget Identification**
+  - Fixed widget name showing as "SystemInfoWidget-widget-index-coffee"
+  - Added explicit `name` export for proper Übersicht identification
+
+- **Shell Version Display**
+  - Shell section now correctly displays version alongside shell name (e.g., "zsh 5.9")
+  - Added version detection for zsh, bash, and fish shells
+
+- **Resolution Display**
+  - Fixed corrupted resolution icon that was showing "default"
+
+### Changed
+- **Complete Module Reorganization**
+  - All modules now under `/lib` with clear subdirectory structure:
+    - `/lib/ui-modules/` - CoffeeScript UI rendering modules
+    - `/lib/shell-modules/` - Bash data collection modules
+  - Updated all module paths in index.coffee and system-info.sh
+  - Removed widget-renderer.coffee to avoid Übersicht parsing issues
+
+- **Code Structure**
+  - Widget reduced from 720 to 480 lines through modularization
+  - Created 8 dedicated UI modules with CommonJS pattern
+  - Improved separation of concerns between data collection and rendering
+
+### Technical Details
+- Style property corrected to use template string with config interpolation
+- Added container display properties for proper layout
+- Explicit flex-direction declarations for reliable column layout
+- Updated all documentation to reflect new architecture
+
+## [3.0.5] - 2025-01-20
+
+### Fixed
+- Reorganized module structure: all modules now in `/lib` directory with subdirectories
+  - `/lib/ui-modules/` - CoffeeScript UI rendering modules
+  - `/lib/shell-modules/` - Bash data collection modules
+- Fixed widget name display in Übersicht (was showing as SystemInfoWidget-widget-index-coffee)
+- Added explicit `name` export to index.coffee for proper widget identification
+- Updated all module paths to reflect new structure
+- Updated documentation to reflect correct directory structure
+
 ## [3.0.4] - 2025-01-20
 
 ### Fixed
-- Module files now use `.lib` extension to completely avoid Übersicht parsing
-- Fixes "Unexpected token ILLEGAL" errors from `.coffee.module` files
-- All module references updated to use `.lib` extension
+- Module files moved to `/lib` directory per Übersicht documentation
+- Files in `/lib` directory are not parsed as separate widgets by Übersicht
+- Fixes persistent "Unexpected token ILLEGAL" errors from previous attempts
+- Updated all documentation to reflect proper `/lib` directory structure
 
 ## [3.0.3] - 2025-01-20
 
 ### Fixed
 - Critical bug where UI modules were being loaded as separate widgets by Übersicht
-- Renamed module files from `.coffee` to `.coffee.module` to prevent auto-loading
-- Übersicht menu no longer shows individual module files
+- Multiple attempts to fix via file renaming (`.coffee.module`, `.lib`, etc.)
+- Discovered correct solution from Übersicht documentation: use `/lib` directory
 
 ## [3.0.2] - 2025-01-20
 
@@ -39,7 +97,7 @@ All notable changes to SystemInfoWidget will be documented in this file.
   - `widget-renderer.coffee` - Main orchestrator module (removed due to Übersicht constraints)
 - Reorganized folder structure:
   - `shell-modules/` - Bash script modules for data collection
-  - `ui-modules/` - CoffeeScript modules for UI rendering
+  - `lib/` - CoffeeScript modules for UI rendering (Übersicht ignores /lib per documentation)
 - Improved code organization with clear section headers and documentation
 
 ### Added
