@@ -449,7 +449,7 @@ Pull requests are welcome! Please feel free to submit issues or improvements.
 
 ## Development Tools
 
-- [Claude Code](https://claude.ai/code) was used to help understand Übersicht's documentation and debug compatibility issues during the v3.x refactoring.
+- [Claude Code](https://claude.ai/code) was used to help understand Übersicht's documentation, documentation of several CLI tools and debug compatibility/module loading  issues during the v3.x refactoring.
 
 ## Credits
 
