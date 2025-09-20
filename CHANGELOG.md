@@ -2,6 +2,13 @@
 
 All notable changes to SystemInfoWidget will be documented in this file.
 
+## [3.0.3] - 2025-01-20
+
+### Fixed
+- Critical bug where UI modules were being loaded as separate widgets by Übersicht
+- Renamed module files from `.coffee` to `.coffee.module` to prevent auto-loading
+- Übersicht menu no longer shows individual module files
+
 ## [3.0.2] - 2025-01-20
 
 ### Fixed
