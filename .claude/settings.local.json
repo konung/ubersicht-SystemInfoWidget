@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/konung/Library/Application Support/Übersicht/widgets/SystemInfoWidget.widget/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

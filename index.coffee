@@ -1,7 +1,7 @@
 # ==============================================================================
 # SystemInfoWidget - Advanced System Monitor for Übersicht
 # ==============================================================================
-# Version: 3.6.0
+# Version: 3.7.0
 # Author: Nick Gorbikoff
 # Repository: https://github.com/konung/ubersicht-SystemInfoWidget
 #
@@ -22,7 +22,7 @@ config =
   # ----------------------------------------------------------------------------
   # Widget Metadata
   # ----------------------------------------------------------------------------
-  version: '3.6.0'
+  version: '3.7.0'
   refreshFrequency: 5000  # Update interval in milliseconds (2.5 seconds)
 
   # ----------------------------------------------------------------------------
@@ -310,7 +310,21 @@ render: ->
       border-radius: #{config.appearance.borderRadius}px;
       padding: #{config.appearance.padding}px;
       box-shadow: #{config.appearance.boxShadow};
+      position: relative;
     ">
+      <div class="refresh-button" id="refreshButton" title="Force cache refresh" style="
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        font-size: 18px;
+        z-index: 1000;
+        color: rgb(#{config.appearance.colors.text});
+      ">
+        ↻
+      </div>
       <div class="main-content">
         #{logoColumn}
         <div class="column column-2">
@@ -331,6 +345,27 @@ render: ->
     </div>
   </div>
   """
+
+# ------------------------------------------------------------------------------
+# After Render Method - Called after initial render
+# ------------------------------------------------------------------------------
+afterRender: (domEl) ->
+  # Setup click handler for refresh button
+  refreshBtn = domEl.querySelector('#refreshButton')
+  if refreshBtn
+    refreshBtn.onclick = =>
+      # Delete cache file
+      @run "rm -f 'SystemInfoWidget.widget/.cache.json'", (error, output) =>
+        if error
+          console.error "Error deleting cache:", error
+        else
+          # Animate the refresh icon
+          refreshBtn.style.transform = 'rotate(360deg)'
+          setTimeout ->
+            refreshBtn.style.transform = 'rotate(0deg)'
+          , 500
+          # Force immediate widget refresh
+          @refresh()
 
 # ------------------------------------------------------------------------------
 # Update Method - Called when new data is available
@@ -494,6 +529,15 @@ style: """
 
   .debug-footer .separator
     opacity: 0.2
+
+  .refresh-button
+    transition: transform 0.5s, opacity 0.2s !important
+
+  .refresh-button:hover
+    opacity: 1 !important
+
+  .refresh-button:active
+    opacity: 0.8 !important
 """
 
 # ==============================================================================
