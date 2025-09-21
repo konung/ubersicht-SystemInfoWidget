@@ -96,6 +96,17 @@ get_time_machine_status() {
                     tm_last_backup="${year}-${month}-${day} ${hour}:${min}"
                 fi
             fi
+
+            # Fallback: Read from Time Machine preferences if tmutil fails
+            if [ "$tm_last_backup" = "N/A" ]; then
+                local plist_backup=$(defaults read /Library/Preferences/com.apple.TimeMachine.plist Destinations 2>/dev/null | \
+                    grep -o '"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]' | \
+                    tr -d '"' | sort -r | head -1)
+                if [ ! -z "$plist_backup" ]; then
+                    # Convert to YYYY-MM-DD HH:MM format
+                    tm_last_backup=$(echo "$plist_backup" | cut -d' ' -f1,2 | cut -d':' -f1,2 | tr ' ' ' ')
+                fi
+            fi
         fi
     fi
 

@@ -1,10 +1,11 @@
 # SystemInfoWidget for Übersicht
 
-**Version 2.1**
+**Version 3.6.0**
 
 A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/uebersicht/) that displays detailed system information on your macOS desktop.
 
 ![SystemInfoWidget Preview](preview.png)
+*Sample screenshot from my desktop (IP/Network Volume info redacted)*
 
 ## Features
 
@@ -61,24 +62,37 @@ A comprehensive system monitoring widget for [Übersicht](http://tracesof.net/ue
 - Last backup date and time (ISO format)
 - Backup destination display
 
-## What's New in Version 2.1
+### Architecture
 
-### Performance Optimizations (v2.1)
-- **Aggressive caching** - Never blocks on slow commands (brew, asdf)
-- **Consistent execution times** - Reduced variance from 1.2-43s to consistent 2-3s
-- **Background updates** - All expensive operations now update cache asynchronously
-- **Singleton pattern** - Prevents duplicate background jobs from competing
+### Version 3.0+ Structure
+The widget now features a fully modular architecture:
 
-## What's New in Version 2.0
+```
+SystemInfoWidget.widget/
+├── index.coffee           # Main widget file (configuration and orchestration)
+├── system-info.sh        # Main data collection script
+└── lib/                 # All modules (Übersicht ignores /lib directory)
+    ├── ui-modules/      # CoffeeScript modules for UI rendering
+    │   ├── helpers.coffee    # Shared UI utilities
+    │   ├── system-renderer.coffee
+    │   ├── network-renderer.coffee
+    │   ├── storage-renderer.coffee
+    │   ├── cpu-renderer.coffee
+    │   ├── dev-renderer.coffee
+    │   └── logo-renderer.coffee
+    └── shell-modules/   # Bash modules for system data collection
+        ├── core.sh      # Utility functions and caching
+        ├── system.sh    # System and hardware info
+        ├── network.sh   # Network interfaces and traffic
+        ├── packages.sh  # Package managers (brew, npm, pip)
+        ├── storage.sh   # Disk usage with APFS support
+        ├── battery.sh   # Battery and Time Machine status
+        └── processes.sh # CPU processes monitoring
+```
 
-### Major Performance Improvements
-- **71% faster execution** - Reduced from 4.2s to 1.2s through modular architecture
-- Parallel execution of all data collection modules
-- Optimized caching system with JSON format
-
-### Architecture Overhaul
-- Complete modularization - Split monolithic 1200-line script into 7 focused modules
-- Better maintainability and extensibility
+### Shell Module Architecture (v2.0+)
+- Complete modularization - Split monolithic script into focused modules
+- Parallel execution for 71% performance improvement
 - Each module can be updated independently
 
 ### Enhanced Features
@@ -200,6 +214,7 @@ display:
   showDev: true           # Developer tools & languages
   showLanguages: true     # Programming language versions
   showNetworkApps: true   # Per-app network traffic
+  showDebugFooter: false  # Debug footer with timing info (for development)
   networkAppsCount: 3     # Number of network apps (1-5)
 ```
 
@@ -388,7 +403,10 @@ MIT License - feel free to modify and distribute
 
 Pull requests are welcome! Please feel free to submit issues or improvements.
 
+## Development Tools
+
+- [Claude Code](https://claude.ai/code) was used to help understand Übersicht's documentation, documentation of several CLI tools and debug compatibility/module loading  issues during the v3.x refactoring.
 
 ## Credits
 
-Inspired by Übersicht widgets NetFullSysInfo and neofetch.
+- Inspired by Übersicht widgets NetFullSysInfo and neofetch

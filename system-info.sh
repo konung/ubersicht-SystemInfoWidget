@@ -1,11 +1,16 @@
 #!/bin/bash
 # Modular system info collector with parallel execution
-# Version: 2.1 - All features, optimized for speed with aggressive caching
+# Version: 3.4.0 - Major reorganization and new metrics
+
+# Track start time for execution measurement (only if requested)
+if [ "$MEASURE_TIME" = "true" ]; then
+    START_TIME=$(($(date +%s%N)/1000000))
+fi
 
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CACHE_FILE="$SCRIPT_DIR/.cache.json"
-MODULES_DIR="$SCRIPT_DIR/modules"
+MODULES_DIR="$SCRIPT_DIR/lib/shell-modules"
 TEMP_DIR=$(mktemp -d)
 
 # Cleanup on exit
@@ -35,12 +40,15 @@ SKIP_NETWORK_APPS="${SKIP_NETWORK_APPS:-kernel_task,IPNExtension,mDNSResponder}"
     get_network_interfaces > "$TEMP_DIR/interfaces.json" &
     get_network_traffic > "$TEMP_DIR/traffic.json" &
     get_storage_info > "$TEMP_DIR/storage.json" &
+    get_mount_points > "$TEMP_DIR/mounts.json" &
     get_battery_info > "$TEMP_DIR/battery.json" &
     get_time_machine_status > "$TEMP_DIR/backup.json" &
     get_top_processes 3 > "$TEMP_DIR/processes.json" &
     get_package_info > "$TEMP_DIR/packages.json" &
     get_language_versions > "$TEMP_DIR/languages.json" &
+    get_docker_status > "$TEMP_DIR/docker.json" &
     get_public_ip_info > "$TEMP_DIR/public_ip.json" &
+    get_active_connections > "$TEMP_DIR/connections.json" &
 
     # Network apps (has 1 second sleep, run last)
     get_network_apps "$NETWORK_APPS_COUNT" "$SKIP_NETWORK_APPS" > "$TEMP_DIR/network_apps.json" &
@@ -66,12 +74,15 @@ jq -n \
     --slurpfile interfaces "$TEMP_DIR/interfaces.json" \
     --slurpfile traffic "$TEMP_DIR/traffic.json" \
     --slurpfile storage "$TEMP_DIR/storage.json" \
+    --slurpfile mounts "$TEMP_DIR/mounts.json" \
     --slurpfile battery "$TEMP_DIR/battery.json" \
     --slurpfile backup "$TEMP_DIR/backup.json" \
     --slurpfile processes "$TEMP_DIR/processes.json" \
     --slurpfile packages "$TEMP_DIR/packages.json" \
     --slurpfile languages "$TEMP_DIR/languages.json" \
+    --slurpfile docker "$TEMP_DIR/docker.json" \
     --slurpfile public_ip "$TEMP_DIR/public_ip.json" \
+    --slurpfile connections "$TEMP_DIR/connections.json" \
     --slurpfile network_apps "$TEMP_DIR/network_apps.json" \
     --arg wifi_ssid "$wifi_ssid" \
     --arg ping "$ping_result" \
@@ -99,11 +110,13 @@ jq -n \
             ),
             public_org: $public_ip[0].public_org,
             public_hostname: $public_ip[0].public_hostname,
+            connections: $connections[0].active_connections,
             ping: $ping,
             ping_target: $ping_target,
             apps: $network_apps[0]
         },
         storage: $storage[0],
+        mounts: $mounts[0],
         battery: $battery[0],
         backup: $backup[0],
         processes: {
@@ -127,6 +140,12 @@ jq -n \
         },
         dev: {
             version_manager: $languages[0].version_manager,
-            languages: ($languages[0] | del(.version_manager))
+            languages: ($languages[0] | del(.version_manager)),
+            docker_running: $docker[0].docker_running,
+            docker_total: $docker[0].docker_total
         }
-    }'
+    }' | if [ "$MEASURE_TIME" = "true" ]; then
+        jq --arg exec_time "$(($(date +%s%N)/1000000 - START_TIME))" '. + {execution_time: ($exec_time | tonumber)}'
+    else
+        cat
+    fi

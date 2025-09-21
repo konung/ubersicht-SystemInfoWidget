@@ -1,6 +1,18 @@
 #!/bin/bash
 # Package management and development tools
 
+get_docker_status() {
+    if command -v docker &> /dev/null; then
+        # Get running containers count
+        local running=$(docker ps -q 2>/dev/null | wc -l | tr -d ' ')
+        # Get total containers count
+        local total=$(docker ps -aq 2>/dev/null | wc -l | tr -d ' ')
+        echo "{\"docker_running\": $running, \"docker_total\": $total}"
+    else
+        echo "{\"docker_running\": 0, \"docker_total\": 0}"
+    fi
+}
+
 get_package_info() {
     # Ensure CACHE_FILE is set
     if [ -z "$CACHE_FILE" ]; then
@@ -38,40 +50,51 @@ get_package_info() {
         # Update cache in background ONLY if not already running
         if ! pgrep -f "brew_cache_update" > /dev/null 2>&1; then
             (
-            # Mark this as brew_cache_update process
-            exec -a brew_cache_update bash -c '
-            # Intel brew
-            if [ -x "/usr/local/bin/brew" ]; then
-                intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-                intel_cask=$(/usr/local/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-                intel_outdated=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
-            else
-                intel_count=0
-                intel_cask=0
-                intel_outdated=0
-            fi
+            # Create a temporary script to run in background
+            cat > /tmp/brew_cache_update.$$ << 'EOF'
+#!/bin/bash
+# Intel brew
+if [ -x "/usr/local/bin/brew" ]; then
+    intel_count=$(/usr/local/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
+    intel_cask=$(/usr/local/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
+    intel_outdated=$(/usr/local/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
+else
+    intel_count=0
+    intel_cask=0
+    intel_outdated=0
+fi
 
-            # ARM brew
-            if [ -x "/opt/homebrew/bin/brew" ]; then
-                arm_count=$(/opt/homebrew/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
-                arm_cask=$(/opt/homebrew/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
-                arm_outdated=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
-            else
-                arm_count=0
-                arm_cask=0
-                arm_outdated=0
-            fi
+# ARM brew
+if [ -x "/opt/homebrew/bin/brew" ]; then
+    arm_count=$(/opt/homebrew/bin/brew list --formula 2>/dev/null | wc -l | tr -d ' ')
+    arm_cask=$(/opt/homebrew/bin/brew list --cask 2>/dev/null | wc -l | tr -d ' ')
+    arm_outdated=$(/opt/homebrew/bin/brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
+else
+    arm_count=0
+    arm_cask=0
+    arm_outdated=0
+fi
 
-            write_cache_values "{
-                \"brew_intel_count\": $intel_count,
-                \"brew_arm_count\": $arm_count,
-                \"brew_intel_cask\": $intel_cask,
-                \"brew_arm_cask\": $arm_cask,
-                \"brew_outdated_intel\": $intel_outdated,
-                \"brew_outdated_arm\": $arm_outdated,
-                \"brew_timestamp\": $(date +%s)
-            }"
-            ' ) &
+# Source the core functions
+CACHE_FILE="$1"
+source "$(dirname "$CACHE_FILE")/lib/shell-modules/core.sh"
+
+write_cache_values "{
+    \"brew_intel_count\": $intel_count,
+    \"brew_arm_count\": $arm_count,
+    \"brew_intel_cask\": $intel_cask,
+    \"brew_arm_cask\": $arm_cask,
+    \"brew_outdated_intel\": $intel_outdated,
+    \"brew_outdated_arm\": $arm_outdated,
+    \"brew_timestamp\": $(date +%s)
+}"
+
+# Clean up
+rm -f /tmp/brew_cache_update.$$
+EOF
+            chmod +x /tmp/brew_cache_update.$$
+            exec -a brew_cache_update /tmp/brew_cache_update.$$ "$CACHE_FILE"
+            ) &
         fi
     fi
 
@@ -104,8 +127,14 @@ get_language_versions() {
     # Use cache if less than 1 hour old
     if [ $cache_age -lt 3600 ] && [ "$asdf_timestamp" != "0" ]; then
         local cached_languages=$(read_cache_value "asdf_languages" "{}")
+        local cached_latest=$(read_cache_value "asdf_latest" "{}")
         if [ "$cached_languages" != "{}" ] && [ "$cached_languages" != "null" ]; then
-            echo "$cached_languages"
+            # Merge current and latest versions into single output
+            if [ "$cached_latest" != "{}" ] && [ "$cached_latest" != "null" ]; then
+                echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {asdf_latest: $latest}'
+            else
+                echo "$cached_languages"
+            fi
             return
         fi
     fi
@@ -125,7 +154,14 @@ get_language_versions() {
 
     # Return cached value while updating in background
     local cached_languages=$(read_cache_value "asdf_languages" '{"version_manager": "asdf"}')
-    echo "$cached_languages"
+    local cached_latest=$(read_cache_value "asdf_latest" "{}")
+
+    # Merge current and latest versions
+    if [ "$cached_latest" != "{}" ] && [ "$cached_latest" != "null" ]; then
+        echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {asdf_latest: $latest}'
+    else
+        echo "$cached_languages"
+    fi
 
     # Update cache in background if not already running
     if ! pgrep -f "asdf_cache_update" > /dev/null 2>&1; then
@@ -139,6 +175,7 @@ get_language_versions() {
 
         # Get all installed languages from asdf
         json_output='{"version_manager": "asdf"'
+        latest_output='{}'
 
         # Get list of all plugins installed in asdf
         plugins=$(asdf plugin list 2>/dev/null)
@@ -159,6 +196,27 @@ get_language_versions() {
 
                 # Add to JSON output
                 json_output+=", \"$plugin\": \"$version\""
+
+                # Get latest available version (only for plugins with current version)
+                if [ "$version" != "N/A" ]; then
+                    # Get all available versions and find the latest stable one
+                    # Filter out RC, beta, dev versions and get the latest stable
+                    latest=$(asdf list all "$plugin" 2>/dev/null | \
+                            grep -v -E '(rc|beta|dev|alpha|preview|snapshot)' | \
+                            grep -E '^[0-9]+\.[0-9]+' | \
+                            tail -1 | \
+                            tr -d ' \n\r')
+
+                    if [ ! -z "$latest" ]; then
+                        # Build latest versions JSON
+                        if [ "$latest_output" = "{}" ]; then
+                            latest_output="{\"$plugin\": \"$latest\""
+                        else
+                            latest_output="${latest_output%\}}, \"$plugin\": \"$latest\""
+                        fi
+                        latest_output="${latest_output}}"
+                    fi
+                fi
             done <<< "$plugins"
         fi
 
@@ -167,11 +225,13 @@ get_language_versions() {
         # Write to cache using jq to update specific fields
         if [ -f "$CACHE_FILE" ]; then
             echo "$json_output" | jq -c . > /tmp/asdf_langs.json
+            echo "$latest_output" | jq -c . > /tmp/asdf_latest.json 2>/dev/null || echo '{}' > /tmp/asdf_latest.json
             current_timestamp=$(date +%s)
             jq --slurpfile langs /tmp/asdf_langs.json \
-               ". + {asdf_languages: \$langs[0], asdf_timestamp: $current_timestamp}" \
+               --slurpfile latest /tmp/asdf_latest.json \
+               ". + {asdf_languages: \$langs[0], asdf_latest: \$latest[0], asdf_timestamp: $current_timestamp}" \
                "$CACHE_FILE" > "${CACHE_FILE}.tmp" && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
-            rm -f /tmp/asdf_langs.json
+            rm -f /tmp/asdf_langs.json /tmp/asdf_latest.json
         fi
         ) &
     fi

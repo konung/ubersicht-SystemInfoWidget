@@ -6,8 +6,28 @@ get_network_interfaces() {
     local first=true
 
     for interface in $(ifconfig -l); do
+        # Get IPv4 address
         local ip=$(ifconfig "$interface" 2>/dev/null | grep 'inet ' | awk '{print $2}' | head -1)
-        if [ ! -z "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+
+        # For AirDrop (awdl), check if it's active even without IPv4
+        local is_active=false
+        if [[ "$interface" == awdl* ]]; then
+            local status=$(ifconfig "$interface" 2>/dev/null | grep 'status:' | awk '{print $2}')
+            if [ "$status" = "active" ]; then
+                is_active=true
+                # Try to get IPv6 address if no IPv4
+                if [ -z "$ip" ]; then
+                    local ipv6=$(ifconfig "$interface" 2>/dev/null | grep 'inet6' | grep -v 'scopeid' | awk '{print $2}' | head -1)
+                    if [ ! -z "$ipv6" ]; then
+                        ip="IPv6 active"
+                    else
+                        ip="Active"
+                    fi
+                fi
+            fi
+        fi
+
+        if ([ ! -z "$ip" ] && [ "$ip" != "127.0.0.1" ]) || [ "$is_active" = true ]; then
             [ "$first" = false ] && interfaces_json+=","
             first=false
 
@@ -177,14 +197,29 @@ get_network_apps() {
     '
 }
 
+get_active_connections() {
+    local connections=$(netstat -an | grep -c ESTABLISHED 2>/dev/null || echo "0")
+    echo "{\"active_connections\": $connections}"
+}
+
 get_public_ip_info() {
+    # Get current FQDN at function start
+    local current_fqdn=$(hostname -f)
+
     # Check cache first
     local ip_timestamp=$(read_cache_value "ip_timestamp" "0")
     local current_time=$(date +%s)
     local cache_age=$((current_time - ip_timestamp))
 
-    # Use cache if less than 10 minutes old
-    if [ $cache_age -lt 600 ] && [ "$ip_timestamp" != "0" ]; then
+    # Check if FQDN changed (including when cache is empty)
+    local cached_fqdn=$(read_cache_value "cached_fqdn" "")
+    local fqdn_changed=false
+    if [ "$current_fqdn" != "$cached_fqdn" ]; then
+        fqdn_changed=true
+    fi
+
+    # Use cache if less than 1 minute old AND FQDN hasn't changed
+    if [ $cache_age -lt 60 ] && [ "$ip_timestamp" != "0" ] && [ "$fqdn_changed" = "false" ]; then
         cat <<EOF
 {
     "public_ip": "$(read_cache_value "public_ip" "N/A")",
@@ -206,7 +241,7 @@ EOF
             local org=$(echo "$ipinfo" | jq -r '.org // ""')
             local hostname=$(echo "$ipinfo" | jq -r '.hostname // ""')
 
-            # Update cache
+            # Update cache (including current FQDN)
             write_cache_values "{
                 \"public_ip\": \"$ip\",
                 \"public_city\": \"$city\",
@@ -214,6 +249,7 @@ EOF
                 \"public_country\": \"$country\",
                 \"public_org\": \"$org\",
                 \"public_hostname\": \"$hostname\",
+                \"cached_fqdn\": \"$current_fqdn\",
                 \"ip_timestamp\": $current_time
             }"
 
