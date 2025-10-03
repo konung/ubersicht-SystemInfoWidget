@@ -7,7 +7,7 @@ module.exports = (config, helpers) ->
     dev = data.dev
     packages = data.packages
 
-    devContent = helpers.sectionHeader("Dev/Software (asdf global)")
+    devContent = helpers.sectionHeader("Dev/Software (mise)")
 
     # Brew packages with detailed breakdown
     if packages
@@ -57,7 +57,7 @@ module.exports = (config, helpers) ->
         devContent += helpers.infoLine(config.icons.languages, "Manager", dev.version_manager, config, config.layout.devLabelWidth)
 
       # Get latest versions if available
-      latestVersions = dev.languages.asdf_latest || {}
+      latestVersions = dev.languages.mise_latest || {}
 
       for lang in config.languages
         version = dev.languages[lang]

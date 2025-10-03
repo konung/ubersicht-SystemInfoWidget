@@ -120,18 +120,18 @@ EOF
 
 get_language_versions() {
     # Check cache first
-    local asdf_timestamp=$(read_cache_value "asdf_timestamp" "0")
+    local mise_timestamp=$(read_cache_value "mise_timestamp" "0")
     local current_time=$(date +%s)
-    local cache_age=$((current_time - asdf_timestamp))
+    local cache_age=$((current_time - mise_timestamp))
 
     # Use cache if less than 1 hour old
-    if [ $cache_age -lt 3600 ] && [ "$asdf_timestamp" != "0" ]; then
-        local cached_languages=$(read_cache_value "asdf_languages" "{}")
-        local cached_latest=$(read_cache_value "asdf_latest" "{}")
+    if [ $cache_age -lt 3600 ] && [ "$mise_timestamp" != "0" ]; then
+        local cached_languages=$(read_cache_value "mise_languages" "{}")
+        local cached_latest=$(read_cache_value "mise_latest" "{}")
         if [ "$cached_languages" != "{}" ] && [ "$cached_languages" != "null" ]; then
             # Merge current and latest versions into single output
             if [ "$cached_latest" != "{}" ] && [ "$cached_latest" != "null" ]; then
-                echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {asdf_latest: $latest}'
+                echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {mise_latest: $latest}'
             else
                 echo "$cached_languages"
             fi
@@ -139,69 +139,59 @@ get_language_versions() {
         fi
     fi
 
-    # Source asdf if available
-    if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
-        . /opt/homebrew/opt/asdf/libexec/asdf.sh 2>/dev/null
-    elif [ -f "$HOME/.asdf/asdf.sh" ]; then
-        . $HOME/.asdf/asdf.sh 2>/dev/null
-    fi
-
-    # Check if asdf is available
-    if ! command -v asdf &> /dev/null; then
-        echo '{"version_manager": "asdf not found"}'
+    # Check if mise is available
+    if ! command -v mise &> /dev/null; then
+        echo '{"version_manager": "mise not found"}'
         return
     fi
 
     # Return cached value while updating in background
-    local cached_languages=$(read_cache_value "asdf_languages" '{"version_manager": "asdf"}')
-    local cached_latest=$(read_cache_value "asdf_latest" "{}")
+    local cached_languages=$(read_cache_value "mise_languages" '{"version_manager": "mise"}')
+    local cached_latest=$(read_cache_value "mise_latest" "{}")
 
     # Merge current and latest versions
     if [ "$cached_latest" != "{}" ] && [ "$cached_latest" != "null" ]; then
-        echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {asdf_latest: $latest}'
+        echo "$cached_languages" | jq --argjson latest "$cached_latest" '. + {mise_latest: $latest}'
     else
         echo "$cached_languages"
     fi
 
     # Update cache in background if not already running
-    if ! pgrep -f "asdf_cache_update" > /dev/null 2>&1; then
+    if ! pgrep -f "mise_cache_update" > /dev/null 2>&1; then
         (
-        # Source asdf
-        if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
-            . /opt/homebrew/opt/asdf/libexec/asdf.sh 2>/dev/null
-        elif [ -f "$HOME/.asdf/asdf.sh" ]; then
-            . $HOME/.asdf/asdf.sh 2>/dev/null
-        fi
-
-        # Get all installed languages from asdf
-        json_output='{"version_manager": "asdf"'
+        # Get all installed languages from mise
+        json_output='{"version_manager": "mise"'
         latest_output='{}'
 
-        # Get list of all plugins installed in asdf
-        plugins=$(asdf plugin list 2>/dev/null)
+        # Get list of all tools installed in mise
+        tools=$(mise ls --installed 2>/dev/null | awk '{print $1}' | sort -u)
 
-        if [ ! -z "$plugins" ]; then
-            # Build JSON for each installed plugin
-            while IFS= read -r plugin; do
+        if [ ! -z "$tools" ]; then
+            # Build JSON for each installed tool
+            while IFS= read -r tool; do
                 # Skip empty lines
-                [ -z "$plugin" ] && continue
+                [ -z "$tool" ] && continue
 
-                # Get current version for this plugin
-                version=$(asdf current "$plugin" 2>/dev/null | tail -1 | awk '{print $2}' | tr -d '\n\r')
+                # Get current version for this tool
+                version=$(mise current "$tool" 2>/dev/null | awk '{print $2}' | tr -d '\n\r')
 
-                # If no version set, check if any versions are installed
-                if [ -z "$version" ] || [ "$version" = "______" ]; then
+                # If no version set, get the installed version
+                if [ -z "$version" ]; then
+                    version=$(mise ls "$tool" 2>/dev/null | grep -v 'not installed' | tail -1 | awk '{print $2}' | tr -d '\n\r')
+                fi
+
+                # If still no version, mark as N/A
+                if [ -z "$version" ]; then
                     version="N/A"
                 fi
 
                 # Add to JSON output
-                json_output+=", \"$plugin\": \"$version\""
+                json_output+=", \"$tool\": \"$version\""
 
-                # Get latest available version (only for plugins with current version)
+                # Get latest available version (only for tools with current version)
                 if [ "$version" != "N/A" ]; then
-                    # Get all available versions and find the latest stable one
-                    # Filter out RC, beta, dev versions and get the latest stable
-                    latest=$(asdf list all "$plugin" 2>/dev/null | \
+                    # Get latest stable version from mise
+                    latest=$(mise ls-remote "$tool" 2>/dev/null | \
                             grep -v -E '(rc|beta|dev|alpha|preview|snapshot)' | \
                             grep -E '^[0-9]+\.[0-9]+' | \
                             tail -1 | \
@@ -210,28 +200,28 @@ get_language_versions() {
                     if [ ! -z "$latest" ]; then
                         # Build latest versions JSON
                         if [ "$latest_output" = "{}" ]; then
-                            latest_output="{\"$plugin\": \"$latest\""
+                            latest_output="{\"$tool\": \"$latest\""
                         else
-                            latest_output="${latest_output%\}}, \"$plugin\": \"$latest\""
+                            latest_output="${latest_output%\}}, \"$tool\": \"$latest\""
                         fi
                         latest_output="${latest_output}}"
                     fi
                 fi
-            done <<< "$plugins"
+            done <<< "$tools"
         fi
 
         json_output+='}'
 
         # Write to cache using jq to update specific fields
         if [ -f "$CACHE_FILE" ]; then
-            echo "$json_output" | jq -c . > /tmp/asdf_langs.json
-            echo "$latest_output" | jq -c . > /tmp/asdf_latest.json 2>/dev/null || echo '{}' > /tmp/asdf_latest.json
+            echo "$json_output" | jq -c . > /tmp/mise_langs.json
+            echo "$latest_output" | jq -c . > /tmp/mise_latest.json 2>/dev/null || echo '{}' > /tmp/mise_latest.json
             current_timestamp=$(date +%s)
-            jq --slurpfile langs /tmp/asdf_langs.json \
-               --slurpfile latest /tmp/asdf_latest.json \
-               ". + {asdf_languages: \$langs[0], asdf_latest: \$latest[0], asdf_timestamp: $current_timestamp}" \
+            jq --slurpfile langs /tmp/mise_langs.json \
+               --slurpfile latest /tmp/mise_latest.json \
+               ". + {mise_languages: \$langs[0], mise_latest: \$latest[0], mise_timestamp: $current_timestamp}" \
                "$CACHE_FILE" > "${CACHE_FILE}.tmp" && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
-            rm -f /tmp/asdf_langs.json /tmp/asdf_latest.json
+            rm -f /tmp/mise_langs.json /tmp/mise_latest.json
         fi
         ) &
     fi
